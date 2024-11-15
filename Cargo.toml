@@ -22,7 +22,7 @@ log = "0.4"
 
 # You only need serde if you want app persistence:
 serde = { version = "1.0.214", features = ["derive"] }
-image = {version = "0.25.4", features = ["rayon"]}
+image = {version = "0.25.5", features = ["rayon"]}
 directories = "5.0.1"
 rfd = "0.15.0"
 wassily = { git = "https://github.com/jeffreyrosenbluth/wassily" }
