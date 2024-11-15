@@ -73,7 +73,7 @@ impl eframe::App for App {
         });
 
         egui::SidePanel::left("side_panel")
-            .exact_width(320.0)
+            .exact_width(300.0)
             .resizable(false)
             .frame(Frame::default().inner_margin(10.0))
             .show(ctx, |ui| {
@@ -102,6 +102,7 @@ impl eframe::App for App {
                 ui.add_space(SPACE);
                 Grid::new("image 1 grid")
                     .spacing((20.0, 10.0))
+                    .min_col_width(100.0)
                     .show(ui, |ui| {
                         ui.label("Blur");
                         ui.add(egui::Slider::new(&mut self.img_blur_1, 0.0..=200.0).step_by(5.0));
@@ -140,6 +141,7 @@ impl eframe::App for App {
 
                 Grid::new("image 2 grid")
                     .spacing((20.0, 10.0))
+                    .min_col_width(100.0)
                     .show(ui, |ui| {
                         ui.label("Blur");
                         ui.add(egui::Slider::new(&mut self.img_blur_2, 0.0..=200.0).step_by(5.0));
@@ -194,6 +196,32 @@ impl eframe::App for App {
                     .spacing((20.0, 10.0))
                     .min_col_width(100.0)
                     .show(ui, |ui| {
+                        if self.combine == Combine::Warp {
+                            ui.label("Angle Scale");
+                            ui.add(
+                                egui::Slider::new(&mut self.angle_scale, 0.0..=5.0).step_by(0.05),
+                            );
+                            ui.end_row();
+
+                            ui.label("Angle Factor");
+                            ui.add(
+                                egui::Slider::new(&mut self.angle_factor, 0.0..=150.0).step_by(0.5),
+                            );
+                            ui.end_row();
+
+                            ui.label("Radius Scale");
+                            ui.add(
+                                egui::Slider::new(&mut self.radius_scale, 0.0..=10.0).step_by(0.05),
+                            );
+                            ui.end_row();
+
+                            ui.label("Radius Factor");
+                            ui.add(
+                                egui::Slider::new(&mut self.radius_factor, 0.0..=2000.0)
+                                    .step_by(50.0),
+                            );
+                            ui.end_row();
+                        }
                         if self.combine == Combine::Divide || self.combine == Combine::Mix {
                             ui.label("Contamination");
                             ui.add(
@@ -277,6 +305,7 @@ impl eframe::App for App {
 
                 Grid::new("screengrid")
                     .spacing((20.0, 10.0))
+                    .min_col_width(100.0)
                     .show(ui, |ui| {
                         ui.label("Screen Overlay");
                         ui.add(egui::Checkbox::new(&mut self.screen, ""));

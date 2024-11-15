@@ -40,8 +40,16 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
         let w = app.width as f32;
         let h = app.height as f32;
         let img_noise = ImgNoise::new(DynamicImage::ImageRgba8(blurred_img_2));
-        let angle_opts = NoiseOpts::default().factor(5.0).width(w).height(h);
-        let radius_opts = NoiseOpts::default().factor(1000.0).width(w).height(h);
+        let angle_opts = NoiseOpts::default()
+            .scales(app.angle_scale)
+            .factor(app.angle_factor)
+            .width(w)
+            .height(h);
+        let radius_opts = NoiseOpts::default()
+            .scales(app.radius_scale)
+            .factor(app.radius_factor)
+            .width(w)
+            .height(h);
         let img_1_cloned = DynamicImage::ImageRgba8(blurred_img_1.clone());
         let warp = Warp::new(
             Arc::new(move |z| {
