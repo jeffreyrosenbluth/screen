@@ -91,22 +91,25 @@ impl eframe::App for App {
                             }
                             ui.close_menu();
                         }
-                        if ui.button("Export PNG").clicked() {
+                        if ui.button("Export").clicked() {
                             let img = draw(&self);
-                            let dirs = UserDirs::new().unwrap();
-                            let dir = dirs.download_dir().unwrap();
-                            let path = format!(r"{}/{}", dir.to_string_lossy(), "screen");
-                            let mut num = 0;
-                            let mut sketch = PathBuf::from(format!(r"{path}_{num}"));
-                            sketch.set_extension("png");
-                            while sketch.exists() {
-                                num += 1;
-                                sketch = PathBuf::from(format!(r"{path}_{num}"));
-                                sketch.set_extension("png");
+                            // let dirs = UserDirs::new().unwrap();
+                            // let dir = dirs.download_dir().unwrap();
+                            // let path = format!(r"{}/{}", dir.to_string_lossy(), "screen");
+                            // let mut num = 0;
+                            // let mut sketch = PathBuf::from(format!(r"{path}_{num}"));
+                            // sketch.set_extension("png");
+                            // while sketch.exists() {
+                            //     num += 1;
+                            //     sketch = PathBuf::from(format!(r"{path}_{num}"));
+                            //     sketch.set_extension("png");
+                            // }
+                            if let Some(path) = rfd::FileDialog::new().save_file() {
+                                let path = path.with_extension("png");
+                                img.save(&path).unwrap();
+                                println!("Image Saved");
+                                println!("-----------------------------");
                             }
-                            img.save(sketch).unwrap();
-                            println!("Image Saved");
-                            println!("------------------");
 
                             ui.close_menu();
                         }
