@@ -4,6 +4,8 @@ use image::{
     RgbaImage,
 };
 
+use serde::{Deserialize, Serialize};
+
 pub fn dims(width: f32, height: f32) -> (f32, f32) {
     if width.max(height) <= 1200.0 {
         return (width, height);
@@ -24,9 +26,7 @@ pub fn to_color_image(img: &RgbaImage, width: u32, height: u32) -> ColorImage {
     )
 }
 
-#[derive(
-    serde::Deserialize, serde::Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy,
-)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub enum Combine {
     Blend,
     Divide,
@@ -34,17 +34,13 @@ pub enum Combine {
     Warp,
 }
 
-#[derive(
-    serde::Deserialize, serde::Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy,
-)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub enum LineColor {
     Black,
     White,
 }
 
-#[derive(
-    serde::Deserialize, serde::Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy,
-)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub enum BlendMode {
     Multiply,
     Screen,
@@ -59,7 +55,7 @@ pub enum BlendMode {
     Exclusion,
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
     pub img_path_1: Option<String>,
@@ -108,10 +104,10 @@ impl Default for App {
             hue_rotation_2: 0,
             width: 4032,
             height: 3024,
-            spacing: 15.0,
+            spacing: 25.0,
             line_color: LineColor::Black,
-            thickness: 0.5,
-            subdivisions: 75,
+            thickness: 1.0,
+            subdivisions: 50,
             min_opacity: 0.1,
             max_opacity: 0.9,
             contamination: 0.25,
@@ -120,25 +116,13 @@ impl Default for App {
             mode: BlendMode::Screen,
             combine: Combine::Blend,
             screen: true,
-            angle_scale: 1.0,
-            angle_factor: 5.0,
-            radius_scale: 1.0,
+            angle_scale: 5.0,
+            angle_factor: 6.0,
+            radius_scale: 5.0,
             radius_factor: 1000.0,
             texture: None,
-            img_1: RgbaImage::from_fn(100, 100, |x, y| {
-                if (x + y) % 2 == 0 {
-                    image::Rgba([150, 150, 0, 255])
-                } else {
-                    image::Rgba([0, 150, 150, 255])
-                }
-            }),
-            img_2: RgbaImage::from_fn(100, 100, |x, y| {
-                if (x + y) % 2 == 0 {
-                    image::Rgba([150, 150, 0, 255])
-                } else {
-                    image::Rgba([0, 150, 150, 255])
-                }
-            }),
+            img_1: RgbaImage::new(1, 1),
+            img_2: RgbaImage::new(1, 1),
         }
     }
 }

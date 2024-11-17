@@ -21,14 +21,15 @@ eframe = { version = "0.29.1", default-features = false, features = [
 log = "0.4"
 
 # You only need serde if you want app persistence:
-serde = { version = "1.0.214", features = ["derive"] }
+serde = { version = "1.0.215", features = ["derive"] }
 image = {version = "0.25.5", features = ["rayon"]}
 directories = "5.0.1"
 rfd = "0.15.0"
 wassily = { git = "https://github.com/jeffreyrosenbluth/wassily" }
 bytemuck = "1.16"
 rayon = "1.10.0"
-fastrand = "2.1.1"
+fastrand = "2.2.0"
+serde_json = "1.0.133"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

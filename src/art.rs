@@ -3,19 +3,19 @@ use std::sync::Arc;
 use crate::core::{App, BlendMode, Combine, LineColor};
 use fastrand;
 use image::{DynamicImage, RgbaImage};
-use palette::{blend::Blend, white_point::C, LinSrgba, Srgba};
+use palette::{blend::Blend, LinSrgba, Srgba};
 use rayon::prelude::*;
 use wassily::prelude::*;
 
 pub(crate) fn draw(app: &App) -> RgbaImage {
-    println!("\n--- Screen 0.1 ---");
+    println!("\n-------- Screen 0.1 ---------");
     fastrand::seed(13);
-    println!("Resizing Image 1");
+    println!("Resizing Image 1 to {}x{}", app.width, app.height);
     let img_1 = DynamicImage::ImageRgba8(app.img_1.clone())
         .huerotate(app.hue_rotation_1)
         .resize_exact(app.width, app.height, image::imageops::FilterType::Lanczos3);
 
-    println!("Resizing Image 2");
+    println!("Resizing Image 2 to {}x{}", app.width, app.height);
     let img_2 = DynamicImage::ImageRgba8(app.img_2.clone())
         .huerotate(app.hue_rotation_2)
         .resize_exact(app.width, app.height, image::imageops::FilterType::Lanczos3);
@@ -36,6 +36,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
         img_2.to_rgba8()
     };
 
+    println!("Generating Image");
     if app.combine == Combine::Warp {
         let w = app.width as f32;
         let h = app.height as f32;
@@ -50,26 +51,27 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
             .factor(app.radius_factor)
             .width(w)
             .height(h);
-        let img_1_cloned = DynamicImage::ImageRgba8(blurred_img_1.clone());
-        let warp = Warp::new(
+        let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
+        let warp = Warp::with_image(
             Arc::new(move |z| {
                 pt(
                     noise2d(&img_noise, &angle_opts, z.x, z.y),
-                    noise2d_01(&img_noise, &radius_opts, z.x + w / 2.0, z.y + h / 2.0),
+                    noise2d_01(&img_noise, &radius_opts, z.x + w / 2.9887, z.y + h / 2.9973),
                 )
             }),
-            WarpNode::Img(&img_1_cloned, w, h),
+            &img_1,
+            w,
+            h,
             Coord::Polar,
         );
         img.par_enumerate_pixels_mut().for_each(|(x, y, px)| {
-            let pixel = warp.get_wrapped(x as f32, y as f32);
+            let pixel = warp.get_reflected(x as f32, y as f32);
             px[0] = (pixel.red() * 255.0) as u8;
             px[1] = (pixel.green() * 255.0) as u8;
             px[2] = (pixel.blue() * 255.0) as u8;
             px[3] = (pixel.alpha() * 255.0) as u8;
         });
     } else {
-        println!("Generating Image");
         let opts = NoiseOpts::default()
             .scales(5.0)
             .width(app.width as f32)
@@ -177,7 +179,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
         }
     }
     println!("Image Generated");
-    println!("------------------");
+    println!("-----------------------------");
 
     canvas_to_rgba_image(&canvas)
 }

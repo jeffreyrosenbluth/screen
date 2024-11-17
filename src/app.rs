@@ -3,6 +3,9 @@ use crate::core::{dims, to_color_image, App, BlendMode, Combine, LineColor};
 use directories::UserDirs;
 use egui::{Button, Frame, Vec2};
 use egui::{ComboBox, Grid};
+use serde_json;
+use std::fs::File;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
 const SPACE: f32 = 7.0;
@@ -26,6 +29,31 @@ impl App {
 
         Default::default()
     }
+
+    pub fn save_to_file(&self, path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        // Serialize to JSON
+        let json = serde_json::to_string_pretty(self)?;
+
+        // Write to file
+        let path = path.with_extension("json");
+        let mut file = File::create(path)?;
+        file.write_all(json.as_bytes())?;
+
+        Ok(())
+    }
+
+    // Load from file
+    pub fn load_from_file(path: &PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+        // Read file contents
+        let mut file = File::open(path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        // Deserialize from JSON
+        let app: App = serde_json::from_str(&contents)?;
+
+        Ok(app)
+    }
 }
 
 impl eframe::App for App {
@@ -44,6 +72,25 @@ impl eframe::App for App {
                 let is_web = cfg!(target_arch = "wasm32");
                 if !is_web {
                     ui.menu_button("File", |ui| {
+                        if ui.button("Open").clicked() {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("JSON", &["json"])
+                                .pick_file()
+                            {
+                                *self = App::load_from_file(&path).unwrap();
+                                let path1 = self.img_path_1.clone().unwrap();
+                                self.img_1 = image::open(path1).unwrap().to_rgba8();
+                                let path2 = self.img_path_2.clone().unwrap();
+                                self.img_2 = image::open(path2).unwrap().to_rgba8();
+                            }
+                            ui.close_menu();
+                        }
+                        if ui.button("Save").clicked() {
+                            if let Some(path) = rfd::FileDialog::new().save_file() {
+                                self.save_to_file(&path).unwrap();
+                            }
+                            ui.close_menu();
+                        }
                         if ui.button("Export PNG").clicked() {
                             let img = draw(&self);
                             let dirs = UserDirs::new().unwrap();
@@ -73,7 +120,7 @@ impl eframe::App for App {
         });
 
         egui::SidePanel::left("side_panel")
-            .exact_width(300.0)
+            .exact_width(310.0)
             .resizable(false)
             .frame(Frame::default().inner_margin(10.0))
             .show(ctx, |ui| {
@@ -105,7 +152,7 @@ impl eframe::App for App {
                     .min_col_width(100.0)
                     .show(ui, |ui| {
                         ui.label("Blur");
-                        ui.add(egui::Slider::new(&mut self.img_blur_1, 0.0..=200.0).step_by(5.0));
+                        ui.add(egui::Slider::new(&mut self.img_blur_1, 0.0..=300.0).step_by(5.0));
                         ui.end_row();
 
                         ui.label("Hue Rotation");
@@ -144,7 +191,7 @@ impl eframe::App for App {
                     .min_col_width(100.0)
                     .show(ui, |ui| {
                         ui.label("Blur");
-                        ui.add(egui::Slider::new(&mut self.img_blur_2, 0.0..=200.0).step_by(5.0));
+                        ui.add(egui::Slider::new(&mut self.img_blur_2, 0.0..=300.0).step_by(5.0));
                         ui.end_row();
 
                         ui.label("Hue Rotation");
@@ -161,11 +208,21 @@ impl eframe::App for App {
                     .min_col_width(100.0)
                     .show(ui, |ui| {
                         ui.label("Width");
-                        ui.add(egui::Slider::new(&mut self.width, 0..=10240));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.width, 0..=28800));
+                            if ui.small_button("↺").clicked() {
+                                self.width = App::default().width;
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("Height");
-                        ui.add(egui::Slider::new(&mut self.height, 0..=10240));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.height, 0..=28800));
+                            if ui.small_button("↺").clicked() {
+                                self.height = App::default().height;
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("Style");
@@ -198,43 +255,82 @@ impl eframe::App for App {
                     .show(ui, |ui| {
                         if self.combine == Combine::Warp {
                             ui.label("Angle Scale");
-                            ui.add(
-                                egui::Slider::new(&mut self.angle_scale, 0.0..=5.0).step_by(0.05),
-                            );
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Slider::new(&mut self.angle_scale, 0.0..=20.0)
+                                        .step_by(0.1),
+                                );
+                                if ui.small_button("↺").clicked() {
+                                    self.angle_scale = App::default().angle_scale;
+                                }
+                            });
                             ui.end_row();
 
                             ui.label("Angle Factor");
-                            ui.add(
-                                egui::Slider::new(&mut self.angle_factor, 0.0..=150.0).step_by(0.5),
-                            );
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Slider::new(&mut self.angle_factor, 0.0..=250.0)
+                                        .step_by(5.0),
+                                );
+                                if ui.small_button("↺").clicked() {
+                                    self.angle_factor = App::default().angle_factor;
+                                }
+                            });
                             ui.end_row();
 
                             ui.label("Radius Scale");
-                            ui.add(
-                                egui::Slider::new(&mut self.radius_scale, 0.0..=10.0).step_by(0.05),
-                            );
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Slider::new(&mut self.radius_scale, 0.0..=20.0)
+                                        .step_by(0.05),
+                                );
+                                if ui.small_button("↺").clicked() {
+                                    self.radius_scale = App::default().radius_scale;
+                                }
+                            });
                             ui.end_row();
 
                             ui.label("Radius Factor");
-                            ui.add(
-                                egui::Slider::new(&mut self.radius_factor, 0.0..=2000.0)
-                                    .step_by(50.0),
-                            );
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Slider::new(&mut self.radius_factor, 0.0..=5000.0)
+                                        .step_by(50.0),
+                                );
+                                if ui.small_button("↺").clicked() {
+                                    self.radius_factor = App::default().radius_factor;
+                                }
+                            });
                             ui.end_row();
                         }
                         if self.combine == Combine::Divide || self.combine == Combine::Mix {
                             ui.label("Contamination");
-                            ui.add(
-                                egui::Slider::new(&mut self.contamination, 0.0..=2.0).step_by(0.05),
-                            );
+                            ui.horizontal(|ui| {
+                                ui.add(
+                                    egui::Slider::new(&mut self.contamination, 0.0..=2.0)
+                                        .step_by(0.05),
+                                );
+                                if ui.small_button("↺").clicked() {
+                                    self.contamination = App::default().contamination;
+                                }
+                            });
                             ui.end_row();
 
                             ui.label("Roughness");
-                            ui.add(egui::Slider::new(&mut self.octaves, 1..=8));
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Slider::new(&mut self.octaves, 0..=8));
+                                if ui.small_button("↺").clicked() {
+                                    self.octaves = App::default().octaves;
+                                }
+                            });
                             ui.end_row();
 
                             ui.label("Cutoff");
-                            ui.add(egui::Slider::new(&mut self.cutoff, -1.0..=1.0));
+                            ui.horizontal(|ui| {
+                                ui.add(egui::Slider::new(&mut self.cutoff, -1.0..=1.0));
+                                if ui.small_button("↺").clicked() {
+                                    self.cutoff = App::default().cutoff;
+                                }
+                            });
                             ui.end_row();
                         }
 
@@ -312,7 +408,12 @@ impl eframe::App for App {
                         ui.end_row();
 
                         ui.label("Line Spacing");
-                        ui.add(egui::Slider::new(&mut self.spacing, 0.0..=100.0));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.spacing, 0.0..=100.0));
+                            if ui.small_button("↺").clicked() {
+                                self.spacing = App::default().spacing;
+                            }
+                        });
                         ui.end_row();
 
                         let original_spacing = ui.spacing().item_spacing.x;
@@ -326,19 +427,39 @@ impl eframe::App for App {
                         ui.end_row();
 
                         ui.label("Thickness");
-                        ui.add(egui::Slider::new(&mut self.thickness, 0.0..=10.0).step_by(0.5));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.thickness, 0.0..=10.0).step_by(0.5));
+                            if ui.small_button("↺").clicked() {
+                                self.thickness = App::default().thickness;
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("Subdivisions");
-                        ui.add(egui::Slider::new(&mut self.subdivisions, 5..=150).step_by(5.0));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.subdivisions, 5..=150).step_by(5.0));
+                            if ui.small_button("↺").clicked() {
+                                self.subdivisions = App::default().subdivisions;
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("Min Opacity");
-                        ui.add(egui::Slider::new(&mut self.min_opacity, 0.0..=1.0));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.min_opacity, 0.0..=1.0));
+                            if ui.small_button("↺").clicked() {
+                                self.min_opacity = App::default().min_opacity;
+                            }
+                        });
                         ui.end_row();
 
                         ui.label("Max Opacity");
-                        ui.add(egui::Slider::new(&mut self.max_opacity, 0.0..=1.0));
+                        ui.horizontal(|ui| {
+                            ui.add(egui::Slider::new(&mut self.max_opacity, 0.0..=1.0));
+                            if ui.small_button("↺").clicked() {
+                                self.max_opacity = App::default().max_opacity;
+                            }
+                        });
                         ui.end_row();
                     });
 
