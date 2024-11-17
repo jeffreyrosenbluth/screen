@@ -18,7 +18,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "Screen",
+        "Mixel",
         native_options,
         Box::new(|cc| Ok(Box::new(screen::App::new(cc)))),
     )

@@ -1,12 +1,12 @@
 use crate::art::draw;
 use crate::core::{dims, to_color_image, App, BlendMode, Combine, LineColor};
-use directories::UserDirs;
-use egui::{Button, Frame, Vec2};
-use egui::{ComboBox, Grid};
+use egui::{Button, ComboBox, Frame, Grid, Vec2};
 use serde_json;
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::PathBuf,
+};
 
 const SPACE: f32 = 7.0;
 
@@ -93,17 +93,6 @@ impl eframe::App for App {
                         }
                         if ui.button("Export").clicked() {
                             let img = draw(&self);
-                            // let dirs = UserDirs::new().unwrap();
-                            // let dir = dirs.download_dir().unwrap();
-                            // let path = format!(r"{}/{}", dir.to_string_lossy(), "screen");
-                            // let mut num = 0;
-                            // let mut sketch = PathBuf::from(format!(r"{path}_{num}"));
-                            // sketch.set_extension("png");
-                            // while sketch.exists() {
-                            //     num += 1;
-                            //     sketch = PathBuf::from(format!(r"{path}_{num}"));
-                            //     sketch.set_extension("png");
-                            // }
                             if let Some(path) = rfd::FileDialog::new().save_file() {
                                 let path = path.with_extension("png");
                                 img.save(&path).unwrap();
@@ -123,9 +112,9 @@ impl eframe::App for App {
         });
 
         egui::SidePanel::left("side_panel")
-            .exact_width(310.0)
+            .exact_width(325.0)
             .resizable(false)
-            .frame(Frame::default().inner_margin(10.0))
+            .frame(Frame::default().inner_margin(15.0))
             .show(ctx, |ui| {
                 ui.heading("Controls");
                 ui.separator();
@@ -135,6 +124,10 @@ impl eframe::App for App {
                         Button::new(egui::RichText::new("  Image 1").strong().size(16.0))
                             .min_size(Vec2::new(150.0, 25.0)),
                     )
+                    .on_hover_ui(|ui| {
+                        ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
+                        ui.colored_label(egui::Color32::ORANGE, "path for image 1.");
+                    })
                     .clicked()
                 {
                     if let Some(path) = rfd::FileDialog::new()
@@ -154,11 +147,22 @@ impl eframe::App for App {
                     .spacing((20.0, 10.0))
                     .min_col_width(100.0)
                     .show(ui, |ui| {
-                        ui.label("Blur");
+                        ui.label("Blur").on_hover_ui(|ui| {
+                            ui.colored_label(
+                                egui::Color32::ORANGE,
+                                "Set the standard deviation of",
+                            );
+                            ui.colored_label(egui::Color32::ORANGE, "the Guassian Blur kernel,");
+                            ui.colored_label(egui::Color32::ORANGE, "to apply to image 1.");
+                        });
                         ui.add(egui::Slider::new(&mut self.img_blur_1, 0.0..=300.0).step_by(5.0));
                         ui.end_row();
 
-                        ui.label("Hue Rotation");
+                        ui.label("Hue Roatation").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Rotate the hue of all colors");
+                            ui.colored_label(egui::Color32::ORANGE, "in image 1 by the specified");
+                            ui.colored_label(egui::Color32::ORANGE, "number of degrees.");
+                        });
                         ui.add(egui::Slider::new(&mut self.hue_rotation_1, 0..=360).step_by(5.0));
                         ui.end_row();
                     });
@@ -172,6 +176,10 @@ impl eframe::App for App {
                         Button::new(egui::RichText::new("  Image 2").strong().size(16.0))
                             .min_size(Vec2::new(150.0, 25.0)),
                     )
+                    .on_hover_ui(|ui| {
+                        ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
+                        ui.colored_label(egui::Color32::ORANGE, "path for image 2.");
+                    })
                     .clicked()
                 {
                     if let Some(path) = rfd::FileDialog::new()
@@ -193,11 +201,22 @@ impl eframe::App for App {
                     .spacing((20.0, 10.0))
                     .min_col_width(100.0)
                     .show(ui, |ui| {
-                        ui.label("Blur");
+                        ui.label("Blur").on_hover_ui(|ui| {
+                            ui.colored_label(
+                                egui::Color32::ORANGE,
+                                "Set the standard deviation of",
+                            );
+                            ui.colored_label(egui::Color32::ORANGE, "the Guassian Blur kernel,");
+                            ui.colored_label(egui::Color32::ORANGE, "to apply to image 2.");
+                        });
                         ui.add(egui::Slider::new(&mut self.img_blur_2, 0.0..=300.0).step_by(5.0));
                         ui.end_row();
 
-                        ui.label("Hue Rotation");
+                        ui.label("Hue Roatation").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Rotate the hue of all colors");
+                            ui.colored_label(egui::Color32::ORANGE, "in image 2 by the specified");
+                            ui.colored_label(egui::Color32::ORANGE, "number of degrees.");
+                        });
                         ui.add(egui::Slider::new(&mut self.hue_rotation_2, 0..=360).step_by(5.0));
                         ui.end_row();
                     });
@@ -210,7 +229,10 @@ impl eframe::App for App {
                     .spacing((20.0, 10.0))
                     .min_col_width(100.0)
                     .show(ui, |ui| {
-                        ui.label("Width");
+                        ui.label("Width").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Set the width of the output");
+                            ui.colored_label(egui::Color32::ORANGE, "image in pixels.");
+                        });
                         ui.horizontal(|ui| {
                             ui.add(egui::Slider::new(&mut self.width, 0..=28800));
                             if ui.small_button("↺").clicked() {
@@ -219,7 +241,10 @@ impl eframe::App for App {
                         });
                         ui.end_row();
 
-                        ui.label("Height");
+                        ui.label("Height").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Set the height of the output");
+                            ui.colored_label(egui::Color32::ORANGE, "image in pixels.");
+                        });
                         ui.horizontal(|ui| {
                             ui.add(egui::Slider::new(&mut self.height, 0..=28800));
                             if ui.small_button("↺").clicked() {
