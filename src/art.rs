@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::{App, BlendMode, Combine, LineColor};
+use crate::core::{App, BlendMode, Combine, LineColor, MapColor};
 use fastrand;
 use image::{DynamicImage, RgbaImage};
 use palette::{blend::Blend, LinSrgba, Srgba};
@@ -40,7 +40,12 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
     if app.combine == Combine::Warp {
         let w = app.width as f32;
         let h = app.height as f32;
-        let img_noise = ImgNoise::new(DynamicImage::ImageRgba8(blurred_img_2));
+        let cm = match app.color_map {
+            MapColor::RedGreen => ColorMap::RedGreen,
+            MapColor::YellowBlue => ColorMap::YellowBlue,
+            _ => ColorMap::Lightness,
+        };
+        let img_noise = ImgNoise::new(DynamicImage::ImageRgba8(blurred_img_2)).set_map(cm);
         let angle_opts = NoiseOpts::default()
             .scales(app.angle_scale)
             .factor(app.angle_factor)

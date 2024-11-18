@@ -4,6 +4,7 @@ use image::{
     RgbaImage,
 };
 
+use rayon::iter::Map;
 use serde::{Deserialize, Serialize};
 
 pub fn dims(width: f32, height: f32) -> (f32, f32) {
@@ -38,6 +39,13 @@ pub enum Combine {
 pub enum LineColor {
     Black,
     White,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+pub enum MapColor {
+    Lightness,
+    RedGreen,
+    YellowBlue,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -82,6 +90,7 @@ pub struct App {
     pub angle_factor: f32,
     pub radius_scale: f32,
     pub radius_factor: f32,
+    pub color_map: MapColor,
 
     #[serde(skip)]
     pub texture: Option<TextureHandle>,
@@ -120,6 +129,7 @@ impl Default for App {
             angle_factor: 6.0,
             radius_scale: 5.0,
             radius_factor: 1000.0,
+            color_map: MapColor::Lightness,
             texture: None,
             img_1: RgbaImage::new(1, 1),
             img_2: RgbaImage::new(1, 1),

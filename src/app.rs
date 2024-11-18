@@ -1,6 +1,7 @@
 use crate::art::draw;
-use crate::core::{dims, to_color_image, App, BlendMode, Combine, LineColor};
+use crate::core::{dims, to_color_image, App, BlendMode, Combine, LineColor, MapColor};
 use egui::{Button, ComboBox, Frame, Grid, Vec2};
+use rayon::iter::Map;
 use serde_json;
 use std::{
     fs::File,
@@ -72,6 +73,7 @@ impl eframe::App for App {
                 let is_web = cfg!(target_arch = "wasm32");
                 if !is_web {
                     ui.menu_button("File", |ui| {
+                        ui.set_min_width(75.0);
                         if ui.button("Open").clicked() {
                             if let Some(path) = rfd::FileDialog::new()
                                 .add_filter("JSON", &["json"])
@@ -253,9 +255,12 @@ impl eframe::App for App {
                         });
                         ui.end_row();
 
-                        ui.label("Style");
+                        ui.label("Filter").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Choose the filter to");
+                            ui.colored_label(egui::Color32::ORANGE, "apply to the image.");
+                        });
                         ui.horizontal(|ui| {
-                            ComboBox::from_label("")
+                            ComboBox::from_id_salt("filter")
                                 .width(150.0)
                                 .selected_text(format!("{:?}", self.combine))
                                 .show_ui(ui, |ui| {
@@ -327,6 +332,35 @@ impl eframe::App for App {
                                 if ui.small_button("↺").clicked() {
                                     self.radius_factor = App::default().radius_factor;
                                 }
+                            });
+                            ui.end_row();
+
+                            ui.label("Color Map").on_hover_ui(|ui| {
+                                ui.colored_label(egui::Color32::ORANGE, "Choose the CIELAB color");
+                                ui.colored_label(egui::Color32::ORANGE, "channel to use as noise.");
+                            });
+                            ui.horizontal(|ui| {
+                                ComboBox::from_id_salt("color map")
+                                    .width(150.0)
+                                    .selected_text(format!("{:?}", self.color_map))
+                                    .show_ui(ui, |ui| {
+                                        ui.set_width(150.0);
+                                        ui.selectable_value(
+                                            &mut self.color_map,
+                                            MapColor::RedGreen,
+                                            "Red Green",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.color_map,
+                                            MapColor::YellowBlue,
+                                            "Yellow Blue",
+                                        );
+                                        ui.selectable_value(
+                                            &mut self.color_map,
+                                            MapColor::Lightness,
+                                            "Lightness",
+                                        );
+                                    });
                             });
                             ui.end_row();
                         }
