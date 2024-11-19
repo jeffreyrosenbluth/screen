@@ -4,8 +4,9 @@ use image::{
     RgbaImage,
 };
 
-use rayon::iter::Map;
+use crate::matrix::Matrix;
 use serde::{Deserialize, Serialize};
+use std::ops::Neg;
 
 pub fn dims(width: f32, height: f32) -> (f32, f32) {
     if width.max(height) <= 1200.0 {
@@ -33,6 +34,7 @@ pub enum Combine {
     Divide,
     Mix,
     Warp,
+    Unsort,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -63,6 +65,51 @@ pub enum BlendMode {
     Exclusion,
 }
 
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone, Copy)]
+pub enum SortBy {
+    Row,
+    Column,
+    ColRow,
+    RowCol,
+}
+
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone, Copy)]
+pub enum SortKey {
+    Lightness,
+    Hue,
+    Saturation,
+}
+
+// Used to store the location of each pixel in the sort image.
+pub type ImgGrid = Matrix<(usize, usize)>;
+
+// Sort by increasing or decreasing direction of the sort function.
+#[derive(Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize, Clone, Copy)]
+pub enum SortOrder {
+    Ascending,
+    Descending,
+}
+
+impl SortOrder {
+    pub fn dir(self) -> i16 {
+        match self {
+            SortOrder::Ascending => 1,
+            SortOrder::Descending => -1,
+        }
+    }
+}
+
+// Change the sort order with the unary negation operator.
+impl Neg for SortOrder {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        match self {
+            SortOrder::Ascending => SortOrder::Descending,
+            SortOrder::Descending => SortOrder::Ascending,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct App {
@@ -91,6 +138,10 @@ pub struct App {
     pub radius_scale: f32,
     pub radius_factor: f32,
     pub color_map: MapColor,
+    pub sort_key: SortKey,
+    pub sort_by: SortBy,
+    pub row_sort_order: SortOrder,
+    pub col_sort_order: SortOrder,
 
     #[serde(skip)]
     pub texture: Option<TextureHandle>,
@@ -130,6 +181,10 @@ impl Default for App {
             radius_scale: 5.0,
             radius_factor: 1000.0,
             color_map: MapColor::Lightness,
+            sort_key: SortKey::Lightness,
+            sort_by: SortBy::Row,
+            row_sort_order: SortOrder::Ascending,
+            col_sort_order: SortOrder::Ascending,
             texture: None,
             img_1: RgbaImage::new(1, 1),
             img_2: RgbaImage::new(1, 1),

@@ -1,7 +1,8 @@
 use crate::art::draw;
-use crate::core::{dims, to_color_image, App, BlendMode, Combine, LineColor, MapColor};
+use crate::core::{
+    dims, to_color_image, App, BlendMode, Combine, LineColor, MapColor, SortBy, SortKey, SortOrder,
+};
 use egui::{Button, ComboBox, Frame, Grid, Vec2};
-use rayon::iter::Map;
 use serde_json;
 use std::{
     fs::File,
@@ -273,6 +274,11 @@ impl eframe::App for App {
                                     );
                                     ui.selectable_value(&mut self.combine, Combine::Mix, "Mix");
                                     ui.selectable_value(&mut self.combine, Combine::Warp, "Warp");
+                                    ui.selectable_value(
+                                        &mut self.combine,
+                                        Combine::Unsort,
+                                        "Unsort",
+                                    );
                                 });
                         });
                         ui.end_row();
@@ -286,6 +292,90 @@ impl eframe::App for App {
                     .spacing((20.0, 10.0))
                     .min_col_width(100.0)
                     .show(ui, |ui| {
+                        if self.combine == Combine::Unsort {
+                            ui.label("Sort By");
+                            ComboBox::from_id_salt("sort by")
+                                .width(150.0)
+                                .selected_text(format!("{:?}", self.sort_by))
+                                .show_ui(ui, |ui| {
+                                    ui.set_min_width(60.0);
+                                    ui.selectable_value(&mut self.sort_by, SortBy::Row, "Row");
+                                    ui.selectable_value(
+                                        &mut self.sort_by,
+                                        SortBy::Column,
+                                        "Column",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_by,
+                                        SortBy::RowCol,
+                                        "Row Column",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_by,
+                                        SortBy::ColRow,
+                                        "Column Row",
+                                    );
+                                });
+                            ui.end_row();
+
+                            ui.label("Sort Key");
+                            ComboBox::from_id_salt("sort key")
+                                .width(150.0)
+                                .selected_text(format!("{:?}", self.sort_key))
+                                .show_ui(ui, |ui| {
+                                    ui.set_min_width(60.0);
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::Lightness,
+                                        "Lightness",
+                                    );
+                                    ui.selectable_value(&mut self.sort_key, SortKey::Hue, "Hue");
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::Saturation,
+                                        "Saturation",
+                                    );
+                                });
+                            ui.end_row();
+
+                            ui.label("Row Sort Order");
+                            ComboBox::from_id_salt("row sort order")
+                                .width(150.0)
+                                .selected_text(format!("{:?}", self.row_sort_order))
+                                .show_ui(ui, |ui| {
+                                    ui.set_min_width(60.0);
+                                    ui.selectable_value(
+                                        &mut self.row_sort_order,
+                                        SortOrder::Ascending,
+                                        "Ascending",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.row_sort_order,
+                                        SortOrder::Descending,
+                                        "Descending",
+                                    );
+                                });
+                            ui.end_row();
+
+                            ui.label("Column Sort Order");
+                            ComboBox::from_id_salt("col sort order")
+                                .width(150.0)
+                                .selected_text(format!("{:?}", self.row_sort_order))
+                                .show_ui(ui, |ui| {
+                                    ui.set_min_width(60.0);
+                                    ui.selectable_value(
+                                        &mut self.row_sort_order,
+                                        SortOrder::Ascending,
+                                        "Ascending",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.row_sort_order,
+                                        SortOrder::Descending,
+                                        "Descending",
+                                    );
+                                });
+                            ui.end_row();
+                        }
                         if self.combine == Combine::Warp {
                             ui.label("Angle Scale");
                             ui.horizontal(|ui| {

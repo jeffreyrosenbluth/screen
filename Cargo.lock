@@ -2950,6 +2950,7 @@ dependencies = [
  "fastrand",
  "image",
  "log",
+ "num-traits",
  "rayon",
  "rfd",
  "serde",
