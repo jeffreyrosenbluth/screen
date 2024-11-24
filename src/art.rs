@@ -1,6 +1,4 @@
-use crate::core::{
-    App, BlendMode, Combine, ImgGrid, LineColor, MapColor, SortBy, SortKey, SortOrder,
-};
+use crate::core::{App, BlendMode, Combine, ImgGrid, LineColor, SortBy, SortKey, SortOrder};
 use crate::matrix::Matrix;
 use crate::sortfns::*;
 use fastrand;
@@ -39,136 +37,137 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
         img_2.to_rgba8()
     };
 
-    println!("Generating Image");
-    if app.combine == Combine::Warp {
-        let w = app.width as f32;
-        let h = app.height as f32;
-        let cm = match app.color_map {
-            MapColor::RedGreen => ColorMap::RedGreen,
-            MapColor::YellowBlue => ColorMap::YellowBlue,
-            _ => ColorMap::Lightness,
-        };
-        let img_noise = ImgNoise::new(DynamicImage::ImageRgba8(blurred_img_2)).set_map(cm);
-        let angle_opts = NoiseOpts::default()
-            .scales(app.angle_scale)
-            .factor(app.angle_factor)
-            .width(w)
-            .height(h);
-        let radius_opts = NoiseOpts::default()
-            .scales(app.radius_scale)
-            .factor(app.radius_factor)
-            .width(w)
-            .height(h);
-        let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
-        let warp = Warp::with_image(
-            Arc::new(move |z| {
-                pt(
-                    noise2d(&img_noise, &angle_opts, z.x, z.y),
-                    noise2d_01(&img_noise, &radius_opts, z.x + w / 2.9887, z.y + h / 2.9973),
-                )
-            }),
-            &img_1,
-            w,
-            h,
-            Coord::Polar,
-        );
-        img.par_enumerate_pixels_mut().for_each(|(x, y, px)| {
-            let pixel = warp.get_reflected(x as f32, y as f32);
-            px[0] = (pixel.red() * 255.0) as u8;
-            px[1] = (pixel.green() * 255.0) as u8;
-            px[2] = (pixel.blue() * 255.0) as u8;
-            px[3] = (pixel.alpha() * 255.0) as u8;
-        });
-    } else if app.combine == Combine::Unsort {
-        let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
-        let img_2 = DynamicImage::ImageRgba8(blurred_img_2);
-        let sort_fn = match app.sort_key {
-            SortKey::Lightness => luma,
-            SortKey::Hue => hue,
-            SortKey::Saturation => sat,
-        };
-        let px_map = match app.sort_by {
-            SortBy::Row => pixel_map_row(&img_1, sort_fn, app.row_sort_order, None),
-            SortBy::Column => pixel_map_column(&img_1, sort_fn, app.col_sort_order, None),
-            SortBy::RowCol => {
-                let pm = pixel_map_row(&img_1, sort_fn, app.row_sort_order, None);
-                pixel_map_column(&img_1, sort_fn, app.col_sort_order, Some(pm))
-            }
-            SortBy::ColRow => {
-                let pm = pixel_map_column(&img_1, sort_fn, app.col_sort_order, None);
-                pixel_map_row(&img_1, sort_fn, app.row_sort_order, Some(pm))
-            }
-        };
-        img = pixel_unsort(&img_2, &px_map);
-    } else {
-        let opts = NoiseOpts::default()
-            .scales(5.0)
-            .width(app.width as f32)
-            .height(app.height as f32);
+    match app.combine {
+        Combine::Warp => {
+            println!("Warping Image");
+            let w = app.width as f32;
+            let h = app.height as f32;
+            let img_noise =
+                ImgNoise::new(DynamicImage::ImageRgba8(blurred_img_2)).set_map(ColorMap::Lightness);
+            let angle_opts = NoiseOpts::default()
+                .scales(app.angle_scale)
+                .factor(app.angle_factor)
+                .width(w)
+                .height(h);
+            let radius_opts = NoiseOpts::default()
+                .scales(app.radius_scale)
+                .factor(app.radius_factor)
+                .width(w)
+                .height(h);
+            let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
+            let warp = Warp::with_image(
+                Arc::new(move |z| {
+                    pt(
+                        noise2d(&img_noise, &angle_opts, z.x, z.y),
+                        noise2d_01(&img_noise, &radius_opts, z.x + w / 2.9887, z.y + h / 2.9973),
+                    )
+                }),
+                &img_1,
+                w,
+                h,
+                Coord::Polar,
+            );
+            img.par_enumerate_pixels_mut().for_each(|(x, y, px)| {
+                let pixel = warp.get_reflected(x as f32, y as f32);
+                px[0] = (pixel.red() * 255.0) as u8;
+                px[1] = (pixel.green() * 255.0) as u8;
+                px[2] = (pixel.blue() * 255.0) as u8;
+                px[3] = (pixel.alpha() * 255.0) as u8;
+            });
+        }
+        Combine::Unsort => {
+            println!("Unsorting Image");
+            let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
+            let img_2 = DynamicImage::ImageRgba8(blurred_img_2);
+            let sort_fn = match app.sort_key {
+                SortKey::Lightness => luma,
+                SortKey::Hue => hue,
+                SortKey::Saturation => sat,
+            };
+            let px_map = match app.sort_by {
+                SortBy::Row => pixel_map_row(&img_1, sort_fn, app.row_sort_order, None),
+                SortBy::Column => pixel_map_column(&img_1, sort_fn, app.col_sort_order, None),
+                SortBy::RowCol => {
+                    let pm = pixel_map_row(&img_1, sort_fn, app.row_sort_order, None);
+                    pixel_map_column(&img_1, sort_fn, app.col_sort_order, Some(pm))
+                }
+                SortBy::ColRow => {
+                    let pm = pixel_map_column(&img_1, sort_fn, app.col_sort_order, None);
+                    pixel_map_row(&img_1, sort_fn, app.row_sort_order, Some(pm))
+                }
+            };
+            img = pixel_unsort(&img_2, &px_map);
+        }
+        rest @ (Combine::Blend | Combine::Divide | Combine::Mix) => {
+            let opts = NoiseOpts::default()
+                .scales(5.0)
+                .width(app.width as f32)
+                .height(app.height as f32);
 
-        let nf = Fbm::<Perlin>::default()
-            .set_seed(13)
-            .set_octaves(app.octaves);
+            let nf = Fbm::<Perlin>::default()
+                .set_seed(13)
+                .set_octaves(app.octaves);
 
-        let opts2 = NoiseOpts::default()
-            .scales(5.0)
-            .width(app.width as f32)
-            .height(app.height as f32);
+            let opts2 = NoiseOpts::default()
+                .scales(5.0)
+                .width(app.width as f32)
+                .height(app.height as f32);
 
-        let nf2 = Fbm::<Perlin>::default().set_seed(23).set_octaves(4);
+            let nf2 = Fbm::<Perlin>::default().set_seed(23).set_octaves(4);
 
-        img.par_enumerate_pixels_mut().for_each(|(x, y, px)| {
-            let pixel;
-            match app.combine {
-                Combine::Divide => {
-                    if noise2d(&nf, &opts, x as f32, y as f32)
-                        + noise2d(&nf2, &opts2, x as f32, y as f32)
-                            * app.contamination
-                            * (0.5 - fastrand::f32())
-                            / (1.0 + 0.5 * app.contamination)
-                        > app.cutoff
-                    {
-                        pixel = *blurred_img_1.get_pixel(x, y);
-                    } else {
-                        pixel = *blurred_img_2.get_pixel(x, y);
+            println!("Generating Image");
+            img.par_enumerate_pixels_mut().for_each(|(x, y, px)| {
+                let pixel;
+                match rest {
+                    Combine::Divide => {
+                        if noise2d(&nf, &opts, x as f32, y as f32)
+                            + noise2d(&nf2, &opts2, x as f32, y as f32)
+                                * app.contamination
+                                * (0.5 - fastrand::f32())
+                                / (1.0 + 0.5 * app.contamination)
+                            > app.cutoff
+                        {
+                            pixel = *blurred_img_1.get_pixel(x, y);
+                        } else {
+                            pixel = *blurred_img_2.get_pixel(x, y);
+                        }
                     }
-                }
-                Combine::Blend => {
-                    pixel = blend(
-                        *blurred_img_1.get_pixel(x, y),
-                        *blurred_img_2.get_pixel(x, y),
-                        app.mode,
-                    );
-                }
-                Combine::Mix => {
-                    if noise2d(&nf, &opts, x as f32, y as f32)
-                        + noise2d(&nf2, &opts2, x as f32, y as f32)
-                            * app.contamination
-                            * (0.5 - fastrand::f32())
-                            / (1.0 + 0.5 * app.contamination)
-                        > app.cutoff
-                    {
+                    Combine::Blend => {
                         pixel = blend(
                             *blurred_img_1.get_pixel(x, y),
                             *blurred_img_2.get_pixel(x, y),
                             app.mode,
-                        )
-                    } else {
-                        pixel = blend(
-                            *blurred_img_2.get_pixel(x, y),
-                            *blurred_img_1.get_pixel(x, y),
-                            app.mode,
-                        )
-                    };
+                        );
+                    }
+                    Combine::Mix => {
+                        if noise2d(&nf, &opts, x as f32, y as f32)
+                            + noise2d(&nf2, &opts2, x as f32, y as f32)
+                                * app.contamination
+                                * (0.5 - fastrand::f32())
+                                / (1.0 + 0.5 * app.contamination)
+                            > app.cutoff
+                        {
+                            pixel = blend(
+                                *blurred_img_1.get_pixel(x, y),
+                                *blurred_img_2.get_pixel(x, y),
+                                app.mode,
+                            )
+                        } else {
+                            pixel = blend(
+                                *blurred_img_2.get_pixel(x, y),
+                                *blurred_img_1.get_pixel(x, y),
+                                app.mode,
+                            )
+                        };
+                    }
+                    _ => unreachable!(),
                 }
-                Combine::Warp => unreachable!(),
-                Combine::Unsort => unreachable!(),
-            }
-            px[0] = pixel[0];
-            px[1] = pixel[1];
-            px[2] = pixel[2];
-            px[3] = pixel[3];
-        });
+                px[0] = pixel[0];
+                px[1] = pixel[1];
+                px[2] = pixel[2];
+                px[3] = pixel[3];
+            });
+        }
     }
 
     println!("Creating Canvas");
@@ -210,6 +209,11 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
     }
     println!("Image Generated");
     println!("-----------------------------");
+
+    if app.grain_scale > 0.0 && app.grain_factor > 0.0 {
+        let gr = Grain::new(500, 500, app.grain_scale, app.grain_factor);
+        gr.canvas_grain(&mut canvas);
+    }
 
     canvas_to_rgba_image(&canvas)
 }
@@ -313,6 +317,7 @@ pub fn pixel_map_column(
     px_map
 }
 
+#[allow(dead_code)]
 // Pixel sort a DynamicImage by rows.
 pub fn pixel_sort_row(img: &DynamicImage, f: SortFn, order: SortOrder) -> RgbaImage {
     let mut data: Vec<u8> = Vec::with_capacity(16 * img.width() as usize * img.height() as usize);
@@ -332,6 +337,7 @@ pub fn pixel_sort_row(img: &DynamicImage, f: SortFn, order: SortOrder) -> RgbaIm
     ImageBuffer::from_vec(img.width(), img.height(), data).unwrap()
 }
 
+#[allow(dead_code)]
 // Pixel sort a DynamicImage by columns.
 pub fn pixel_sort_column(img: &DynamicImage, f: SortFn, order: SortOrder) -> RgbaImage {
     let rotate_img = img.rotate90();

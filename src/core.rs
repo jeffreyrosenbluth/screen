@@ -44,13 +44,6 @@ pub enum LineColor {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub enum MapColor {
-    Lightness,
-    RedGreen,
-    YellowBlue,
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub enum BlendMode {
     Multiply,
     Screen,
@@ -137,11 +130,12 @@ pub struct App {
     pub angle_factor: f32,
     pub radius_scale: f32,
     pub radius_factor: f32,
-    pub color_map: MapColor,
     pub sort_key: SortKey,
     pub sort_by: SortBy,
     pub row_sort_order: SortOrder,
     pub col_sort_order: SortOrder,
+    pub grain_scale: f32,
+    pub grain_factor: f32,
 
     #[serde(skip)]
     pub texture: Option<TextureHandle>,
@@ -180,11 +174,12 @@ impl Default for App {
             angle_factor: 6.0,
             radius_scale: 5.0,
             radius_factor: 1000.0,
-            color_map: MapColor::Lightness,
             sort_key: SortKey::Lightness,
             sort_by: SortBy::Row,
             row_sort_order: SortOrder::Ascending,
             col_sort_order: SortOrder::Ascending,
+            grain_factor: 10.0,
+            grain_scale: 1.0,
             texture: None,
             img_1: RgbaImage::new(1, 1),
             img_2: RgbaImage::new(1, 1),
