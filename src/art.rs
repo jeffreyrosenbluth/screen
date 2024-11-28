@@ -9,7 +9,7 @@ use std::sync::Arc;
 use wassily::prelude::*;
 
 pub(crate) fn draw(app: &App) -> RgbaImage {
-    println!("\n-------- Screen 0.1 ---------");
+    println!("\n--------- Mixel 0.1 ---------");
     fastrand::seed(13);
     println!("Resizing Image 1 to {}x{}", app.width, app.height);
     let img_1 = DynamicImage::ImageRgba8(app.img_1.clone())
