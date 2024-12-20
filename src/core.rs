@@ -45,6 +45,7 @@ pub enum LineColor {
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 pub enum BlendMode {
+    Normal,
     Multiply,
     Screen,
     Overlay,
@@ -112,6 +113,8 @@ pub struct App {
     pub img_blur_2: f32,
     pub hue_rotation_1: i32,
     pub hue_rotation_2: i32,
+    pub opacity_1: u8,
+    pub opacity_2: u8,
     pub width: u32,
     pub height: u32,
     pub spacing: f32,
@@ -152,8 +155,8 @@ impl Default for App {
         Self {
             img_path_1: None,
             img_path_2: None,
-            img_blur_1: 100.0,
-            img_blur_2: 75.0,
+            img_blur_1: 0.0,
+            img_blur_2: 0.0,
             hue_rotation_1: 0,
             hue_rotation_2: 0,
             width: 4032,
@@ -183,6 +186,8 @@ impl Default for App {
             texture: None,
             img_1: RgbaImage::new(1, 1),
             img_2: RgbaImage::new(1, 1),
+            opacity_1: 255,
+            opacity_2: 255,
         }
     }
 }

@@ -3,6 +3,7 @@ use crate::matrix::Matrix;
 use crate::sortfns::*;
 use fastrand;
 use image::*;
+use palette::{alpha, Mix};
 use palette::{blend::Blend, LinSrgba, Srgba};
 use rayon::prelude::*;
 use std::sync::Arc;
@@ -137,6 +138,8 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
                             *blurred_img_1.get_pixel(x, y),
                             *blurred_img_2.get_pixel(x, y),
                             app.mode,
+                            app.opacity_1,
+                            app.opacity_2,
                         );
                     }
                     Combine::Mix => {
@@ -151,12 +154,16 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
                                 *blurred_img_1.get_pixel(x, y),
                                 *blurred_img_2.get_pixel(x, y),
                                 app.mode,
+                                app.opacity_1,
+                                app.opacity_2,
                             )
                         } else {
                             pixel = blend(
                                 *blurred_img_2.get_pixel(x, y),
                                 *blurred_img_1.get_pixel(x, y),
                                 app.mode,
+                                app.opacity_1,
+                                app.opacity_2,
                             )
                         };
                     }
@@ -245,9 +252,17 @@ fn srgba_to_rgba_u8(color: Srgba<f32>) -> Rgba<u8> {
     Rgba([rgba.0, rgba.1, rgba.2, rgba.3])
 }
 
-fn blend(c1: Rgba<u8>, c2: Rgba<u8>, mode: BlendMode) -> Rgba<u8> {
-    let c1 = Srgba::from_components((c1.0[0], c1.0[1], c1.0[2], c1.0[3]));
-    let c2 = Srgba::from_components((c2.0[0], c2.0[1], c2.0[2], c2.0[3]));
+fn normal_blend(src: LinSrgba, dst: LinSrgba) -> LinSrgba {
+    let alpha = src.alpha + dst.alpha * (1.0 - src.alpha);
+    let red = (src.red * src.alpha + dst.red * dst.alpha * (1.0 - src.alpha)) / alpha;
+    let green = (src.green * src.alpha + dst.green * dst.alpha * (1.0 - src.alpha)) / alpha;
+    let blue = (src.blue * src.alpha + dst.blue * dst.alpha * (1.0 - src.alpha)) / alpha;
+    LinSrgba::new(red, green, blue, alpha)
+}
+
+fn blend(c1: Rgba<u8>, c2: Rgba<u8>, mode: BlendMode, opacity_1: u8, opacity_2: u8) -> Rgba<u8> {
+    let c1 = Srgba::from_components((c1.0[0], c1.0[1], c1.0[2], opacity_1));
+    let c2 = Srgba::from_components((c2.0[0], c2.0[1], c2.0[2], opacity_2));
     let lin_color1: LinSrgba = c1.into_linear();
     let lin_color2: LinSrgba = c2.into_linear();
     let blended_lin_color = match mode {
@@ -262,6 +277,7 @@ fn blend(c1: Rgba<u8>, c2: Rgba<u8>, mode: BlendMode) -> Rgba<u8> {
         BlendMode::SoftLight => lin_color1.soft_light(lin_color2),
         BlendMode::Difference => lin_color1.difference(lin_color2),
         BlendMode::Exclusion => lin_color1.exclusion(lin_color2),
+        BlendMode::Normal => normal_blend(lin_color1, lin_color2),
     };
     let blended_srgba = Srgba::from_linear(blended_lin_color);
     srgba_to_rgba_u8(blended_srgba)

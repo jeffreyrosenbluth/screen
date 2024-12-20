@@ -2,7 +2,7 @@ use crate::art::draw;
 use crate::core::{
     dims, to_color_image, App, BlendMode, Combine, LineColor, SortBy, SortKey, SortOrder,
 };
-use egui::{Button, ComboBox, Frame, Grid, Vec2};
+use egui::{Button, ComboBox, Frame, Grid, SliderClamping, Vec2};
 use serde_json;
 use std::{
     fs::File,
@@ -149,7 +149,7 @@ impl eframe::App for App {
         });
 
         egui::SidePanel::left("side_panel")
-            .exact_width(325.0)
+            .exact_width(330.0)
             .resizable(false)
             .frame(Frame::default().inner_margin(15.0))
             .show(ctx, |ui| {
@@ -198,8 +198,12 @@ impl eframe::App for App {
                         ui.add(
                             egui::Slider::new(&mut self.img_blur_1, 0.0..=300.0)
                                 .step_by(if shift_held { 10.0 } else { 1.0 })
+                                .clamping(SliderClamping::Never)
                                 .trailing_fill(true),
                         );
+                        if ui.small_button("↺").clicked() {
+                            self.img_blur_1 = App::default().img_blur_1;
+                        }
                         ui.end_row();
 
                         ui.label("Hue Roatation").on_hover_ui(|ui| {
@@ -210,6 +214,19 @@ impl eframe::App for App {
                         ui.add(
                             egui::Slider::new(&mut self.hue_rotation_1, 0..=360)
                                 .step_by(if shift_held { 15.0 } else { 5.0 })
+                                .clamping(SliderClamping::Never)
+                                .trailing_fill(true),
+                        );
+                        ui.end_row();
+
+                        ui.label("Opacity").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Set the opacity of image 1.");
+                            ui.colored_label(egui::Color32::ORANGE, "opacity is from 0 to 255.");
+                        });
+                        ui.add(
+                            egui::Slider::new(&mut self.opacity_1, 0..=255)
+                                .step_by(if shift_held { 10.0 } else { 5.0 })
+                                .clamping(SliderClamping::Never)
                                 .trailing_fill(true),
                         );
                         ui.end_row();
@@ -260,8 +277,12 @@ impl eframe::App for App {
                         ui.add(
                             egui::Slider::new(&mut self.img_blur_2, 0.0..=300.0)
                                 .step_by(if shift_held { 10.0 } else { 1.0 })
+                                .clamping(SliderClamping::Never)
                                 .trailing_fill(true),
                         );
+                        if ui.small_button("↺").clicked() {
+                            self.img_blur_2 = App::default().img_blur_2;
+                        }
                         ui.end_row();
 
                         ui.label("Hue Roatation").on_hover_ui(|ui| {
@@ -272,6 +293,19 @@ impl eframe::App for App {
                         ui.add(
                             egui::Slider::new(&mut self.hue_rotation_2, 0..=360)
                                 .step_by(if shift_held { 15.0 } else { 5.0 })
+                                .clamping(SliderClamping::Never)
+                                .trailing_fill(true),
+                        );
+                        ui.end_row();
+
+                        ui.label("Opacity").on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Set the opacity of image 2.");
+                            ui.colored_label(egui::Color32::ORANGE, "opacity is from 0 to 255.");
+                        });
+                        ui.add(
+                            egui::Slider::new(&mut self.opacity_2, 0..=255)
+                                .step_by(if shift_held { 10.0 } else { 5.0 })
+                                .clamping(SliderClamping::Never)
                                 .trailing_fill(true),
                         );
                         ui.end_row();
@@ -291,7 +325,9 @@ impl eframe::App for App {
                         });
                         ui.horizontal(|ui| {
                             ui.add(
-                                egui::Slider::new(&mut self.width, 0..=28800).trailing_fill(true),
+                                egui::Slider::new(&mut self.width, 0..=28800)
+                                    .trailing_fill(true)
+                                    .clamping(SliderClamping::Never),
                             );
                             if ui.small_button("↺").clicked() {
                                 self.width = App::default().width;
@@ -305,7 +341,9 @@ impl eframe::App for App {
                         });
                         ui.horizontal(|ui| {
                             ui.add(
-                                egui::Slider::new(&mut self.height, 0..=28800).trailing_fill(true),
+                                egui::Slider::new(&mut self.height, 0..=28800)
+                                    .trailing_fill(true)
+                                    .clamping(SliderClamping::Never),
                             );
                             if ui.small_button("↺").clicked() {
                                 self.height = App::default().height;
@@ -316,12 +354,22 @@ impl eframe::App for App {
 
                 ui.add_space(SPACE);
                 ui.separator();
-                ui.label(
-                    egui::RichText::new(format!("{:?}", self.combine))
-                        .strong()
-                        .color(egui::Color32::WHITE)
-                        .size(16.0),
-                );
+
+                Grid::new("filter grid")
+                    .spacing((20.0, 10.0))
+                    .min_col_width(100.0)
+                    .show(ui, |ui| {
+                        ui.label("");
+                        ui.label(
+                            egui::RichText::new(format!("{:?}", self.combine))
+                                .strong()
+                                .color(egui::Color32::ORANGE)
+                                .size(18.0),
+                        );
+                        ui.label("");
+                        ui.end_row();
+                    });
+
                 ui.separator();
                 ui.add_space(SPACE);
 
@@ -419,6 +467,7 @@ impl eframe::App for App {
                                 ui.add(
                                     egui::Slider::new(&mut self.angle_scale, 0.0..=20.0)
                                         .trailing_fill(true)
+                                        .trailing_fill(true)
                                         .step_by(if shift_held { 1.0 } else { 0.1 }),
                                 );
                                 if ui.small_button("↺").clicked() {
@@ -432,6 +481,7 @@ impl eframe::App for App {
                                 ui.add(
                                     egui::Slider::new(&mut self.angle_factor, 0.0..=250.0)
                                         .step_by(if shift_held { 10.0 } else { 1.0 })
+                                        .trailing_fill(true)
                                         .trailing_fill(true),
                                 );
                                 if ui.small_button("↺").clicked() {
@@ -445,6 +495,7 @@ impl eframe::App for App {
                                 ui.add(
                                     egui::Slider::new(&mut self.radius_scale, 0.0..=20.0)
                                         .step_by(if shift_held { 1.0 } else { 0.05 })
+                                        .trailing_fill(true)
                                         .trailing_fill(true),
                                 );
                                 if ui.small_button("↺").clicked() {
@@ -458,6 +509,7 @@ impl eframe::App for App {
                                 ui.add(
                                     egui::Slider::new(&mut self.radius_factor, 0.0..=5000.0)
                                         .step_by(if shift_held { 250.0 } else { 50.0 })
+                                        .trailing_fill(true)
                                         .trailing_fill(true),
                                 );
                                 if ui.small_button("↺").clicked() {
@@ -472,6 +524,7 @@ impl eframe::App for App {
                                 ui.add(
                                     egui::Slider::new(&mut self.contamination, 0.0..=2.0)
                                         .step_by(if shift_held { 0.25 } else { 0.05 })
+                                        .trailing_fill(true)
                                         .trailing_fill(true),
                                 );
                                 if ui.small_button("↺").clicked() {
@@ -496,6 +549,7 @@ impl eframe::App for App {
                                 ui.add(
                                     egui::Slider::new(&mut self.cutoff, -1.0..=1.0)
                                         .step_by(if shift_held { 0.1 } else { 0.01 })
+                                        .clamping(SliderClamping::Never)
                                         .trailing_fill(true),
                                 );
                                 if ui.small_button("↺").clicked() {
@@ -561,6 +615,11 @@ impl eframe::App for App {
                                         BlendMode::SoftLight,
                                         "Soft Light",
                                     );
+                                    ui.selectable_value(
+                                        &mut self.mode,
+                                        BlendMode::Normal,
+                                        "Normal",
+                                    );
                                 });
                             ui.end_row();
                         }
@@ -583,6 +642,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.spacing, 0.0..=100.0)
                                     .step_by(if shift_held { 5.0 } else { 1.0 })
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
@@ -606,6 +666,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.thickness, 0.0..=10.0)
                                     .step_by(0.5)
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
@@ -619,6 +680,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.subdivisions, 5..=150)
                                     .step_by(if shift_held { 5.0 } else { 1.0 })
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
@@ -632,6 +694,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.min_opacity, 0.0..=1.0)
                                     .step_by(if shift_held { 0.05 } else { 0.01 })
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
@@ -645,6 +708,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.max_opacity, 0.0..=1.0)
                                     .step_by(if shift_held { 0.05 } else { 0.01 })
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
@@ -667,6 +731,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.grain_scale, 0.0..=5.0)
                                     .step_by(if shift_held { 0.1 } else { 0.01 })
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
@@ -680,6 +745,7 @@ impl eframe::App for App {
                             ui.add(
                                 egui::Slider::new(&mut self.grain_factor, 0.0..=100.0)
                                     .step_by(if shift_held { 5.0 } else { 1.0 })
+                                    .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
                             );
                             if ui.small_button("↺").clicked() {
