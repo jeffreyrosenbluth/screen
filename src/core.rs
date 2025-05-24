@@ -148,6 +148,9 @@ pub struct App {
 
     #[serde(skip)]
     pub img_2: RgbaImage,
+
+    #[serde(skip)]
+    pub img: RgbaImage,
 }
 
 impl Default for App {
@@ -186,6 +189,7 @@ impl Default for App {
             texture: None,
             img_1: RgbaImage::new(1, 1),
             img_2: RgbaImage::new(1, 1),
+            img: RgbaImage::new(1, 1),
             opacity_1: 255,
             opacity_2: 255,
         }

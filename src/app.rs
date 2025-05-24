@@ -105,8 +105,8 @@ impl eframe::App for App {
                         if ui.button("Save png").clicked() {
                             if let Some(path) = rfd::FileDialog::new().save_file() {
                                 let path = path.with_extension("png");
-                                let img = draw(&self);
-                                img.save(&path).unwrap();
+                                // let img = draw(&self);
+                                self.img.save(&path).unwrap();
                                 println!("Image Saved");
                                 println!("-----------------------------");
                             }
@@ -196,7 +196,7 @@ impl eframe::App for App {
                             ui.colored_label(egui::Color32::ORANGE, "to apply to image 1.");
                         });
                         ui.add(
-                            egui::Slider::new(&mut self.img_blur_1, 0.0..=300.0)
+                            egui::Slider::new(&mut self.img_blur_1, 0.0..=500.0)
                                 .step_by(if shift_held { 10.0 } else { 1.0 })
                                 .clamping(SliderClamping::Never)
                                 .trailing_fill(true),
@@ -275,7 +275,7 @@ impl eframe::App for App {
                             ui.colored_label(egui::Color32::ORANGE, "to apply to image 2.");
                         });
                         ui.add(
-                            egui::Slider::new(&mut self.img_blur_2, 0.0..=300.0)
+                            egui::Slider::new(&mut self.img_blur_2, 0.0..=500.0)
                                 .step_by(if shift_held { 10.0 } else { 1.0 })
                                 .clamping(SliderClamping::Never)
                                 .trailing_fill(true),
@@ -664,7 +664,7 @@ impl eframe::App for App {
                         ui.label("Thickness");
                         ui.horizontal(|ui| {
                             ui.add(
-                                egui::Slider::new(&mut self.thickness, 0.0..=10.0)
+                                egui::Slider::new(&mut self.thickness, 0.0..=100.0)
                                     .step_by(0.5)
                                     .clamping(SliderClamping::Never)
                                     .trailing_fill(true),
@@ -766,10 +766,10 @@ impl eframe::App for App {
                             .clicked()
                         {
                             let size = dims(self.width as f32, self.height as f32);
-                            let img = draw(&self);
+                            self.img = draw(&self);
                             self.texture = Some(ui.ctx().load_texture(
                                 "draw",
-                                to_color_image(&img, size.0 as u32, size.1 as u32),
+                                to_color_image(&self.img, size.0 as u32, size.1 as u32),
                                 Default::default(),
                             ));
                         }

@@ -3,7 +3,6 @@ use crate::matrix::Matrix;
 use crate::sortfns::*;
 use fastrand;
 use image::*;
-use palette::{alpha, Mix};
 use palette::{blend::Blend, LinSrgba, Srgba};
 use rayon::prelude::*;
 use std::sync::Arc;
