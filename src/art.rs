@@ -5,23 +5,30 @@ use fastrand;
 use image::*;
 use palette::{blend::Blend, LinSrgba, Srgba};
 use rayon::prelude::*;
+use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use wassily::prelude::*;
 
-pub(crate) fn draw(app: &App) -> RgbaImage {
-    println!("\n--------- Mixel 0.1 ---------");
+pub(crate) fn draw(app: &App, status_tx: Sender<String>) -> RgbaImage {
+    status_tx
+        .send("--------- Mixel 0.1 ---------".to_string())
+        .unwrap();
     fastrand::seed(13);
-    println!("Resizing Image 1 to {}x{}", app.width, app.height);
+    status_tx
+        .send(format!("Resizing Image 1 to {}x{}", app.width, app.height))
+        .unwrap();
     let img_1 = DynamicImage::ImageRgba8(app.img_1.clone())
         .huerotate(app.hue_rotation_1)
         .resize_exact(app.width, app.height, image::imageops::FilterType::Lanczos3);
 
-    println!("Resizing Image 2 to {}x{}", app.width, app.height);
+    status_tx
+        .send(format!("Resizing Image 2 to {}x{}", app.width, app.height))
+        .unwrap();
     let img_2 = DynamicImage::ImageRgba8(app.img_2.clone())
         .huerotate(app.hue_rotation_2)
         .resize_exact(app.width, app.height, image::imageops::FilterType::Lanczos3);
 
-    println!("Blurring Image 1");
+    status_tx.send("Blurring Image 1".to_string()).unwrap();
     let mut img = RgbaImage::new(app.width, app.height);
 
     let blurred_img_1 = if app.img_blur_1 > 0.0 {
@@ -30,7 +37,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
         img_1.to_rgba8()
     };
 
-    println!("Blurring Image 2");
+    status_tx.send("Blurring Image 2".to_string()).unwrap();
     let blurred_img_2 = if app.img_blur_2 > 0.0 {
         img_2.fast_blur(app.img_blur_2).to_rgba8()
     } else {
@@ -39,7 +46,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
 
     match app.combine {
         Combine::Warp => {
-            println!("Warping Image");
+            status_tx.send("Warping Image".to_string()).unwrap();
             let w = app.width as f32;
             let h = app.height as f32;
             let img_noise =
@@ -76,7 +83,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
             });
         }
         Combine::Unsort => {
-            println!("Sorting Image 1");
+            status_tx.send("Sorting Image 1".to_string()).unwrap();
             let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
             let img_2 = DynamicImage::ImageRgba8(blurred_img_2);
             let sort_fn = match app.sort_key {
@@ -96,7 +103,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
                     pixel_map_row(&img_1, sort_fn, app.row_sort_order, Some(pm))
                 }
             };
-            println!("Unsorting Image 2");
+            status_tx.send("Unsorting Image 2".to_string()).unwrap();
             img = pixel_unsort(&img_2, &px_map);
         }
         rest @ (Combine::Blend | Combine::Divide | Combine::Mix) => {
@@ -116,7 +123,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
 
             let nf2 = Fbm::<Perlin>::default().set_seed(23).set_octaves(4);
 
-            println!("Generating Image");
+            status_tx.send("Generating Image".to_string()).unwrap();
             let rest = rest;
             let contamination = app.contamination;
             let cutoff = app.cutoff;
@@ -183,7 +190,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
         }
     }
 
-    println!("Creating Canvas");
+    status_tx.send("Creating Canvas".to_string()).unwrap();
     let mut canvas = Canvas::from_image(&DynamicImage::ImageRgba8(img));
     let linecolor = if app.line_color == LineColor::Black {
         *BLACK
@@ -192,7 +199,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
     };
     let mut i = app.spacing;
 
-    println!("Drawing Overlay");
+    status_tx.send("Drawing Overlay".to_string()).unwrap();
     if app.screen {
         while i < canvas.h_f32() {
             let v0 = pt(0, i);
@@ -220,8 +227,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
             i += app.spacing;
         }
     }
-    println!("Image Generated");
-    println!("-----------------------------");
+    status_tx.send("Image Generated".to_string()).unwrap();
 
     if app.grain_scale > 0.0 && app.grain_factor > 0.0 {
         let gr = Grain::new(500, 500, app.grain_scale, app.grain_factor);

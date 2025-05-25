@@ -9,6 +9,7 @@ use std::{
     fs::File,
     io::{Read, Write},
     path::PathBuf,
+    sync::{Arc, Mutex},
     thread,
 };
 
@@ -841,14 +842,19 @@ impl eframe::App for App {
                         {
                             if !self.drawing_in_progress {
                                 let (tx, rx) = std::sync::mpsc::channel();
+                                let (status_tx, status_rx) = std::sync::mpsc::channel();
                                 let mut app_clone = self.clone();
                                 app_clone.draw_receiver = None; // Remove receiver from clone
                                 self.drawing_in_progress = true;
                                 self.draw_receiver = Some(rx);
+                                self.status_message = String::new();
                                 let ctx = ui.ctx().clone();
+                                let status_message = Arc::new(Mutex::new(String::new()));
+                                let status_message_clone = status_message.clone();
+                                self.status_message_arc = Some(status_message);
 
                                 thread::spawn(move || {
-                                    let img = draw(&app_clone);
+                                    let img = draw(&app_clone, status_tx);
                                     let size =
                                         dims(app_clone.width as f32, app_clone.height as f32);
                                     let texture = ctx.load_texture(
@@ -858,17 +864,48 @@ impl eframe::App for App {
                                     );
                                     let _ = tx.send(texture);
                                 });
+
+                                // Start a thread to receive status updates
+                                let ctx = ui.ctx().clone();
+                                thread::spawn(move || {
+                                    while let Ok(msg) = status_rx.recv() {
+                                        if let Ok(mut status) = status_message_clone.lock() {
+                                            *status = msg;
+                                            ctx.request_repaint();
+                                        }
+                                    }
+                                });
                             }
+                        }
+
+                        // Display the status message
+                        if !self.status_message.is_empty() {
+                            ui.add_space(SPACE);
+                            ui.label(
+                                egui::RichText::new(&self.status_message)
+                                    .color(egui::Color32::ORANGE),
+                            );
                         }
                     }
                 });
 
-                // Check for completed drawing
+                // Check for completed drawing and update status
                 if let Some(receiver) = &self.draw_receiver {
                     if let Ok(texture) = receiver.try_recv() {
                         self.texture = Some(texture);
                         self.drawing_in_progress = false;
                         self.draw_receiver = None;
+                        self.status_message = String::new();
+                        self.status_message_arc = None;
+                        ui.ctx().request_repaint();
+                    } else if let Some(status_arc) = &self.status_message_arc {
+                        // Update status message from the shared Arc
+                        if let Ok(status) = status_arc.lock() {
+                            if !status.is_empty() {
+                                self.status_message = status.clone();
+                                ui.ctx().request_repaint();
+                            }
+                        }
                     }
                 }
 
@@ -918,7 +955,7 @@ impl eframe::App for App {
                     if let Some(txt) = &self.thumbnail_1 {
                         ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
                     }
-                    ui.add_space(SPACE);
+                    ui.add_space(s);
                     if let Some(txt) = &self.thumbnail_2 {
                         ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
                     }
@@ -929,7 +966,7 @@ impl eframe::App for App {
                     if let Some(txt) = &self.thumbnail_1 {
                         ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
                     }
-                    ui.add_space(SPACE);
+                    ui.add_space(s);
                     if let Some(txt) = &self.thumbnail_2 {
                         ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
                     }

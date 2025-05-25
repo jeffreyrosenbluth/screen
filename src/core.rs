@@ -4,6 +4,7 @@ use image::{
     RgbaImage,
 };
 use std::sync::mpsc::Receiver;
+use std::sync::{Arc, Mutex};
 
 use crate::matrix::Matrix;
 use serde::{Deserialize, Serialize};
@@ -164,6 +165,12 @@ pub struct App {
 
     #[serde(skip)]
     pub draw_receiver: Option<Receiver<TextureHandle>>,
+
+    #[serde(skip)]
+    pub status_message: String,
+
+    #[serde(skip)]
+    pub status_message_arc: Option<Arc<Mutex<String>>>,
 }
 
 impl Default for App {
@@ -209,6 +216,8 @@ impl Default for App {
             opacity_2: 255,
             drawing_in_progress: false,
             draw_receiver: None,
+            status_message: String::new(),
+            status_message_arc: None,
         }
     }
 }
@@ -256,6 +265,8 @@ impl Clone for App {
             img: self.img.clone(),
             drawing_in_progress: false,
             draw_receiver: None,
+            status_message: String::new(),
+            status_message_arc: None,
         }
     }
 }
