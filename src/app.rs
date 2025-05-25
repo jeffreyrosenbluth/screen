@@ -3,6 +3,7 @@ use crate::core::{
     dims, to_color_image, App, BlendMode, Combine, LineColor, SortBy, SortKey, SortOrder,
 };
 use egui::{Button, ComboBox, Frame, Grid, SliderClamping, Vec2};
+use image::RgbaImage;
 use serde_json;
 use std::{
     fs::File,
@@ -23,9 +24,31 @@ impl App {
             let mut app: App = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
             if let Some(path) = &app.img_path_1 {
                 app.img_1 = image::open(path).map(|i| i.to_rgba8()).unwrap_or_default();
+                let thumb1 = image::imageops::resize(
+                    &app.img_1,
+                    240,
+                    180,
+                    image::imageops::FilterType::Lanczos3,
+                );
+                app.thumbnail_1 = Some(cc.egui_ctx.load_texture(
+                    "thumb1",
+                    to_color_image(&thumb1, 240, 180),
+                    Default::default(),
+                ));
             }
             if let Some(path) = &app.img_path_2 {
                 app.img_2 = image::open(path).map(|i| i.to_rgba8()).unwrap_or_default();
+                let thumb2 = image::imageops::resize(
+                    &app.img_2,
+                    240,
+                    180,
+                    image::imageops::FilterType::Lanczos3,
+                );
+                app.thumbnail_2 = Some(cc.egui_ctx.load_texture(
+                    "thumb2",
+                    to_color_image(&thumb2, 240, 180),
+                    Default::default(),
+                ));
             }
             return app;
         }
@@ -94,6 +117,30 @@ impl eframe::App for App {
                                 self.img_1 = image::open(path1).unwrap().to_rgba8();
                                 let path2 = self.img_path_2.clone().unwrap();
                                 self.img_2 = image::open(path2).unwrap().to_rgba8();
+
+                                // Create thumbnails
+                                let thumb1 = image::imageops::resize(
+                                    &self.img_1,
+                                    200,
+                                    150,
+                                    image::imageops::FilterType::Lanczos3,
+                                );
+                                let thumb2 = image::imageops::resize(
+                                    &self.img_2,
+                                    200,
+                                    150,
+                                    image::imageops::FilterType::Lanczos3,
+                                );
+                                self.thumbnail_1 = Some(ui.ctx().load_texture(
+                                    "thumb1",
+                                    to_color_image(&thumb1, 200, 150),
+                                    Default::default(),
+                                ));
+                                self.thumbnail_2 = Some(ui.ctx().load_texture(
+                                    "thumb2",
+                                    to_color_image(&thumb2, 200, 150),
+                                    Default::default(),
+                                ));
                             }
                             ui.close_menu();
                         }
@@ -176,6 +223,17 @@ impl eframe::App for App {
                     {
                         self.img_path_1 = Some(path.display().to_string());
                         self.img_1 = image::open(&path).unwrap().to_rgba8();
+                        let thumb1 = image::imageops::resize(
+                            &self.img_1,
+                            200,
+                            150,
+                            image::imageops::FilterType::Lanczos3,
+                        );
+                        self.thumbnail_1 = Some(ui.ctx().load_texture(
+                            "thumb1",
+                            to_color_image(&thumb1, 200, 150),
+                            Default::default(),
+                        ));
                     }
                 }
                 ui.add_space(SPACE);
@@ -253,6 +311,17 @@ impl eframe::App for App {
                     {
                         self.img_path_2 = Some(path.display().to_string());
                         self.img_2 = image::open(&path).unwrap().to_rgba8();
+                        let thumb2 = image::imageops::resize(
+                            &self.img_2,
+                            200,
+                            150,
+                            image::imageops::FilterType::Lanczos3,
+                        );
+                        self.thumbnail_2 = Some(ui.ctx().load_texture(
+                            "thumb2",
+                            to_color_image(&thumb2, 200, 150),
+                            Default::default(),
+                        ));
                     }
                 }
 
@@ -776,10 +845,18 @@ impl eframe::App for App {
                                 app_clone.draw_receiver = None; // Remove receiver from clone
                                 self.drawing_in_progress = true;
                                 self.draw_receiver = Some(rx);
+                                let ctx = ui.ctx().clone();
 
                                 thread::spawn(move || {
                                     let img = draw(&app_clone);
-                                    let _ = tx.send(img);
+                                    let size =
+                                        dims(app_clone.width as f32, app_clone.height as f32);
+                                    let texture = ctx.load_texture(
+                                        "draw",
+                                        to_color_image(&img, size.0 as u32, size.1 as u32),
+                                        Default::default(),
+                                    );
+                                    let _ = tx.send(texture);
                                 });
                             }
                         }
@@ -788,14 +865,8 @@ impl eframe::App for App {
 
                 // Check for completed drawing
                 if let Some(receiver) = &self.draw_receiver {
-                    if let Ok(img) = receiver.try_recv() {
-                        self.img = img;
-                        let size = dims(self.width as f32, self.height as f32);
-                        self.texture = Some(ui.ctx().load_texture(
-                            "draw",
-                            to_color_image(&self.img, size.0 as u32, size.1 as u32),
-                            Default::default(),
-                        ));
+                    if let Ok(texture) = receiver.try_recv() {
+                        self.texture = Some(texture);
                         self.drawing_in_progress = false;
                         self.draw_receiver = None;
                     }
@@ -805,7 +876,8 @@ impl eframe::App for App {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add_space(2.0 * SPACE);
+            let s = 4.0 * SPACE;
+            ui.add_space(SPACE);
             egui::warn_if_debug_build(ui);
             if let Some(txt) = &self.texture {
                 let img_size = txt.size_vec2();
@@ -813,6 +885,54 @@ impl eframe::App for App {
                 ui.horizontal(|ui| {
                     ui.add_space(SPACE);
                     ui.add_sized(egui::vec2(size.0, size.1), egui::Image::new(txt));
+                });
+            } else {
+                // Placeholder for when no image is generated yet
+                let size = dims(self.width as f32, self.height as f32);
+                ui.horizontal(|ui| {
+                    ui.add_space(SPACE);
+                    let rect = ui.allocate_rect(
+                        egui::Rect::from_min_size(ui.min_rect().min, egui::vec2(size.0, size.1)),
+                        egui::Sense::hover(),
+                    );
+                    ui.painter()
+                        .rect_filled(rect.rect, 0.0, egui::Color32::from_gray(40));
+                    let text = egui::RichText::new("No image generated yet").size(20.0);
+                    ui.put(rect.rect, egui::Label::new(text));
+                });
+            }
+
+            // Display thumbnails - manually centered
+            ui.add_space(s);
+
+            // Calculate total width needed
+            let thumbnail_width = 240.0;
+            let total_width = thumbnail_width * 2.0 + SPACE;
+            let available_width = ui.available_width();
+
+            if available_width > total_width {
+                ui.horizontal(|ui| {
+                    // Add space to center
+                    ui.add_space((available_width - total_width) / 2.0);
+
+                    if let Some(txt) = &self.thumbnail_1 {
+                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                    }
+                    ui.add_space(SPACE);
+                    if let Some(txt) = &self.thumbnail_2 {
+                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                    }
+                });
+            } else {
+                // If not enough space, just show normally
+                ui.horizontal(|ui| {
+                    if let Some(txt) = &self.thumbnail_1 {
+                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                    }
+                    ui.add_space(SPACE);
+                    if let Some(txt) = &self.thumbnail_2 {
+                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                    }
                 });
             }
         });

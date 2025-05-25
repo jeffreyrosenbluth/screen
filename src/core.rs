@@ -145,6 +145,12 @@ pub struct App {
     pub texture: Option<TextureHandle>,
 
     #[serde(skip)]
+    pub thumbnail_1: Option<TextureHandle>,
+
+    #[serde(skip)]
+    pub thumbnail_2: Option<TextureHandle>,
+
+    #[serde(skip)]
     pub img_1: RgbaImage,
 
     #[serde(skip)]
@@ -157,7 +163,7 @@ pub struct App {
     pub drawing_in_progress: bool,
 
     #[serde(skip)]
-    pub draw_receiver: Option<Receiver<RgbaImage>>,
+    pub draw_receiver: Option<Receiver<TextureHandle>>,
 }
 
 impl Default for App {
@@ -194,6 +200,8 @@ impl Default for App {
             grain_factor: 10.0,
             grain_scale: 0.35,
             texture: None,
+            thumbnail_1: None,
+            thumbnail_2: None,
             img_1: RgbaImage::new(1, 1),
             img_2: RgbaImage::new(1, 1),
             img: RgbaImage::new(1, 1),
@@ -241,6 +249,8 @@ impl Clone for App {
             grain_scale: self.grain_scale,
             grain_factor: self.grain_factor,
             texture: None,
+            thumbnail_1: None,
+            thumbnail_2: None,
             img_1: self.img_1.clone(),
             img_2: self.img_2.clone(),
             img: self.img.clone(),
