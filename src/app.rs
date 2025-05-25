@@ -8,6 +8,7 @@ use std::{
     fs::File,
     io::{Read, Write},
     path::PathBuf,
+    thread,
 };
 
 const SPACE: f32 = 7.0;
@@ -105,7 +106,6 @@ impl eframe::App for App {
                         if ui.button("Save png").clicked() {
                             if let Some(path) = rfd::FileDialog::new().save_file() {
                                 let path = path.with_extension("png");
-                                // let img = draw(&self);
                                 self.img.save(&path).unwrap();
                                 println!("Image Saved");
                                 println!("-----------------------------");
@@ -761,20 +761,46 @@ impl eframe::App for App {
 
                 ui.vertical_centered({
                     |ui| {
+                        let button_text = if self.drawing_in_progress {
+                            "Drawing..."
+                        } else {
+                            "Draw"
+                        };
                         if ui
-                            .add(Button::new("Draw").min_size(Vec2::new(125.0, 25.0)))
+                            .add(Button::new(button_text).min_size(Vec2::new(125.0, 25.0)))
                             .clicked()
                         {
-                            let size = dims(self.width as f32, self.height as f32);
-                            self.img = draw(&self);
-                            self.texture = Some(ui.ctx().load_texture(
-                                "draw",
-                                to_color_image(&self.img, size.0 as u32, size.1 as u32),
-                                Default::default(),
-                            ));
+                            if !self.drawing_in_progress {
+                                let (tx, rx) = std::sync::mpsc::channel();
+                                let mut app_clone = self.clone();
+                                app_clone.draw_receiver = None; // Remove receiver from clone
+                                self.drawing_in_progress = true;
+                                self.draw_receiver = Some(rx);
+
+                                thread::spawn(move || {
+                                    let img = draw(&app_clone);
+                                    let _ = tx.send(img);
+                                });
+                            }
                         }
                     }
                 });
+
+                // Check for completed drawing
+                if let Some(receiver) = &self.draw_receiver {
+                    if let Ok(img) = receiver.try_recv() {
+                        self.img = img;
+                        let size = dims(self.width as f32, self.height as f32);
+                        self.texture = Some(ui.ctx().load_texture(
+                            "draw",
+                            to_color_image(&self.img, size.0 as u32, size.1 as u32),
+                            Default::default(),
+                        ));
+                        self.drawing_in_progress = false;
+                        self.draw_receiver = None;
+                    }
+                }
+
                 ui.add_space(SPACE);
             });
 

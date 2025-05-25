@@ -3,6 +3,7 @@ use image::{
     imageops::{self, FilterType},
     RgbaImage,
 };
+use std::sync::mpsc::Receiver;
 
 use crate::matrix::Matrix;
 use serde::{Deserialize, Serialize};
@@ -151,6 +152,12 @@ pub struct App {
 
     #[serde(skip)]
     pub img: RgbaImage,
+
+    #[serde(skip)]
+    pub drawing_in_progress: bool,
+
+    #[serde(skip)]
+    pub draw_receiver: Option<Receiver<RgbaImage>>,
 }
 
 impl Default for App {
@@ -192,6 +199,53 @@ impl Default for App {
             img: RgbaImage::new(1, 1),
             opacity_1: 255,
             opacity_2: 255,
+            drawing_in_progress: false,
+            draw_receiver: None,
+        }
+    }
+}
+
+impl Clone for App {
+    fn clone(&self) -> Self {
+        Self {
+            img_path_1: self.img_path_1.clone(),
+            img_path_2: self.img_path_2.clone(),
+            img_blur_1: self.img_blur_1,
+            img_blur_2: self.img_blur_2,
+            hue_rotation_1: self.hue_rotation_1,
+            hue_rotation_2: self.hue_rotation_2,
+            opacity_1: self.opacity_1,
+            opacity_2: self.opacity_2,
+            width: self.width,
+            height: self.height,
+            spacing: self.spacing,
+            line_color: self.line_color,
+            thickness: self.thickness,
+            subdivisions: self.subdivisions,
+            min_opacity: self.min_opacity,
+            max_opacity: self.max_opacity,
+            contamination: self.contamination,
+            octaves: self.octaves,
+            cutoff: self.cutoff,
+            mode: self.mode,
+            combine: self.combine,
+            screen: self.screen,
+            angle_scale: self.angle_scale,
+            angle_factor: self.angle_factor,
+            radius_scale: self.radius_scale,
+            radius_factor: self.radius_factor,
+            sort_key: self.sort_key,
+            sort_by: self.sort_by,
+            row_sort_order: self.row_sort_order,
+            col_sort_order: self.col_sort_order,
+            grain_scale: self.grain_scale,
+            grain_factor: self.grain_factor,
+            texture: None,
+            img_1: self.img_1.clone(),
+            img_2: self.img_2.clone(),
+            img: self.img.clone(),
+            drawing_in_progress: false,
+            draw_receiver: None,
         }
     }
 }

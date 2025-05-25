@@ -76,7 +76,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
             });
         }
         Combine::Unsort => {
-            println!("Unsorting Image");
+            println!("Sorting Image 1");
             let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
             let img_2 = DynamicImage::ImageRgba8(blurred_img_2);
             let sort_fn = match app.sort_key {
@@ -96,6 +96,7 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
                     pixel_map_row(&img_1, sort_fn, app.row_sort_order, Some(pm))
                 }
             };
+            println!("Unsorting Image 2");
             img = pixel_unsort(&img_2, &px_map);
         }
         rest @ (Combine::Blend | Combine::Divide | Combine::Mix) => {
@@ -116,16 +117,22 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
             let nf2 = Fbm::<Perlin>::default().set_seed(23).set_octaves(4);
 
             println!("Generating Image");
+            let rest = rest;
+            let contamination = app.contamination;
+            let cutoff = app.cutoff;
+            let mode = app.mode;
+            let opacity_1 = app.opacity_1;
+            let opacity_2 = app.opacity_2;
             img.par_enumerate_pixels_mut().for_each(|(x, y, px)| {
                 let pixel;
                 match rest {
                     Combine::Divide => {
                         if noise2d(&nf, &opts, x as f32, y as f32)
                             + noise2d(&nf2, &opts2, x as f32, y as f32)
-                                * app.contamination
+                                * contamination
                                 * (0.5 - fastrand::f32())
-                                / (1.0 + 0.5 * app.contamination)
-                            > app.cutoff
+                                / (1.0 + 0.5 * contamination)
+                            > cutoff
                         {
                             pixel = *blurred_img_1.get_pixel(x, y);
                         } else {
@@ -136,33 +143,33 @@ pub(crate) fn draw(app: &App) -> RgbaImage {
                         pixel = blend(
                             *blurred_img_1.get_pixel(x, y),
                             *blurred_img_2.get_pixel(x, y),
-                            app.mode,
-                            app.opacity_1,
-                            app.opacity_2,
+                            mode,
+                            opacity_1,
+                            opacity_2,
                         );
                     }
                     Combine::Mix => {
                         if noise2d(&nf, &opts, x as f32, y as f32)
                             + noise2d(&nf2, &opts2, x as f32, y as f32)
-                                * app.contamination
+                                * contamination
                                 * (0.5 - fastrand::f32())
-                                / (1.0 + 0.5 * app.contamination)
-                            > app.cutoff
+                                / (1.0 + 0.5 * contamination)
+                            > cutoff
                         {
                             pixel = blend(
                                 *blurred_img_1.get_pixel(x, y),
                                 *blurred_img_2.get_pixel(x, y),
-                                app.mode,
-                                app.opacity_1,
-                                app.opacity_2,
+                                mode,
+                                opacity_1,
+                                opacity_2,
                             )
                         } else {
                             pixel = blend(
                                 *blurred_img_2.get_pixel(x, y),
                                 *blurred_img_1.get_pixel(x, y),
-                                app.mode,
-                                app.opacity_1,
-                                app.opacity_2,
+                                mode,
+                                opacity_1,
+                                opacity_2,
                             )
                         };
                     }
