@@ -164,7 +164,7 @@ pub struct App {
     pub drawing_in_progress: bool,
 
     #[serde(skip)]
-    pub draw_receiver: Option<Receiver<TextureHandle>>,
+    pub draw_receiver: Option<Receiver<(TextureHandle, RgbaImage)>>,
 
     #[serde(skip)]
     pub status_message: String,

@@ -862,7 +862,7 @@ impl eframe::App for App {
                                         to_color_image(&img, size.0 as u32, size.1 as u32),
                                         Default::default(),
                                     );
-                                    let _ = tx.send(texture);
+                                    let _ = tx.send((texture, img));
                                 });
 
                                 // Start a thread to receive status updates
@@ -891,8 +891,9 @@ impl eframe::App for App {
 
                 // Check for completed drawing and update status
                 if let Some(receiver) = &self.draw_receiver {
-                    if let Ok(texture) = receiver.try_recv() {
+                    if let Ok((texture, img)) = receiver.try_recv() {
                         self.texture = Some(texture);
+                        self.img = img;
                         self.drawing_in_progress = false;
                         self.draw_receiver = None;
                         self.status_message = String::new();
@@ -916,62 +917,68 @@ impl eframe::App for App {
             let s = 4.0 * SPACE;
             ui.add_space(SPACE);
             egui::warn_if_debug_build(ui);
-            if let Some(txt) = &self.texture {
-                let img_size = txt.size_vec2();
-                let size = dims(img_size[0], img_size[1]);
-                ui.horizontal(|ui| {
-                    ui.add_space(SPACE);
-                    ui.add_sized(egui::vec2(size.0, size.1), egui::Image::new(txt));
-                });
-            } else {
-                // Placeholder for when no image is generated yet
-                let size = dims(self.width as f32, self.height as f32);
-                ui.horizontal(|ui| {
-                    ui.add_space(SPACE);
-                    let rect = ui.allocate_rect(
-                        egui::Rect::from_min_size(ui.min_rect().min, egui::vec2(size.0, size.1)),
-                        egui::Sense::hover(),
-                    );
-                    ui.painter()
-                        .rect_filled(rect.rect, 0.0, egui::Color32::from_gray(40));
-                    let text = egui::RichText::new("No image generated yet").size(20.0);
-                    ui.put(rect.rect, egui::Label::new(text));
-                });
-            }
 
-            // Display thumbnails - manually centered
-            ui.add_space(s);
+            egui::ScrollArea::both().show(ui, |ui| {
+                if let Some(txt) = &self.texture {
+                    let img_size = txt.size_vec2();
+                    let size = dims(img_size[0], img_size[1]);
+                    ui.horizontal(|ui| {
+                        ui.add_space(SPACE);
+                        ui.add_sized(egui::vec2(size.0, size.1), egui::Image::new(txt));
+                    });
+                } else {
+                    // Placeholder for when no image is generated yet
+                    let size = dims(self.width as f32, self.height as f32);
+                    ui.horizontal(|ui| {
+                        ui.add_space(SPACE);
+                        let rect = ui.allocate_rect(
+                            egui::Rect::from_min_size(
+                                ui.min_rect().min,
+                                egui::vec2(size.0, size.1),
+                            ),
+                            egui::Sense::hover(),
+                        );
+                        ui.painter()
+                            .rect_filled(rect.rect, 0.0, egui::Color32::from_gray(40));
+                        let text = egui::RichText::new("No image generated yet").size(20.0);
+                        ui.put(rect.rect, egui::Label::new(text));
+                    });
+                }
 
-            // Calculate total width needed
-            let thumbnail_width = 240.0;
-            let total_width = thumbnail_width * 2.0 + SPACE;
-            let available_width = ui.available_width();
+                // Display thumbnails - manually centered
+                ui.add_space(s);
 
-            if available_width > total_width {
-                ui.horizontal(|ui| {
-                    // Add space to center
-                    ui.add_space((available_width - total_width) / 2.0);
+                // Calculate total width needed
+                let thumbnail_width = 240.0;
+                let total_width = thumbnail_width * 2.0 + SPACE;
+                let available_width = ui.available_width();
 
-                    if let Some(txt) = &self.thumbnail_1 {
-                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                    }
-                    ui.add_space(s);
-                    if let Some(txt) = &self.thumbnail_2 {
-                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                    }
-                });
-            } else {
-                // If not enough space, just show normally
-                ui.horizontal(|ui| {
-                    if let Some(txt) = &self.thumbnail_1 {
-                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                    }
-                    ui.add_space(s);
-                    if let Some(txt) = &self.thumbnail_2 {
-                        ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                    }
-                });
-            }
+                if available_width > total_width {
+                    ui.horizontal(|ui| {
+                        // Add space to center
+                        ui.add_space((available_width - total_width) / 2.0);
+
+                        if let Some(txt) = &self.thumbnail_1 {
+                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                        }
+                        ui.add_space(s);
+                        if let Some(txt) = &self.thumbnail_2 {
+                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                        }
+                    });
+                } else {
+                    // If not enough space, just show normally
+                    ui.horizontal(|ui| {
+                        if let Some(txt) = &self.thumbnail_1 {
+                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                        }
+                        ui.add_space(s);
+                        if let Some(txt) = &self.thumbnail_2 {
+                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
+                        }
+                    });
+                }
+            });
         });
     }
 }
