@@ -2,7 +2,7 @@ use crate::art::draw;
 use crate::core::{
     dims, to_color_image, App, BlendMode, Combine, LineColor, SortBy, SortKey, SortOrder,
 };
-use egui::{Align, Button, ComboBox, Frame, Grid, Layout, SliderClamping, Vec2};
+use egui::{Button, ComboBox, Frame, Grid, SliderClamping, Vec2};
 use serde_json;
 use std::{
     fs::File,
@@ -949,7 +949,9 @@ impl eframe::App for App {
                 }
 
                 // Display thumbnails - centered under the main image
-                ui.add_space(s);
+                ui.add_space(SPACE * 2.0);
+                ui.separator();
+                ui.add_space(SPACE * 2.0);
 
                 // Calculate the main image width to center thumbnails under it
                 let main_image_width = if let Some(txt) = &self.texture {
@@ -1009,7 +1011,10 @@ impl eframe::App for App {
                                     if let Some(picked_path) = &self.img_path_1 {
                                         let path = PathBuf::from(picked_path);
                                         if let Some(file_name) = path.file_name() {
-                                            ui.label(file_name.to_string_lossy());
+                                            ui.colored_label(
+                                                egui::Color32::WHITE,
+                                                file_name.to_string_lossy(),
+                                            );
                                         }
                                     }
                                 });
@@ -1054,7 +1059,10 @@ impl eframe::App for App {
                                     if let Some(picked_path) = &self.img_path_2 {
                                         let path = PathBuf::from(picked_path);
                                         if let Some(file_name) = path.file_name() {
-                                            ui.label(file_name.to_string_lossy());
+                                            ui.colored_label(
+                                                egui::Color32::WHITE,
+                                                file_name.to_string_lossy(),
+                                            );
                                         }
                                     }
                                 });
