@@ -2,8 +2,7 @@ use crate::art::draw;
 use crate::core::{
     dims, to_color_image, App, BlendMode, Combine, LineColor, SortBy, SortKey, SortOrder,
 };
-use egui::{Button, ComboBox, Frame, Grid, SliderClamping, Vec2};
-use image::RgbaImage;
+use egui::{Align, Button, ComboBox, Frame, Grid, Layout, SliderClamping, Vec2};
 use serde_json;
 use std::{
     fs::File,
@@ -160,6 +159,15 @@ impl eframe::App for App {
                             }
                             ui.close_menu();
                         }
+                        if ui.button("Save tiff").clicked() {
+                            if let Some(path) = rfd::FileDialog::new().save_file() {
+                                let path = path.with_extension("tiff");
+                                self.img.save(&path).unwrap();
+                                println!("Image Saved");
+                                println!("-----------------------------");
+                            }
+                            ui.close_menu();
+                        }
                         if ui.button("Reset").clicked() {
                             self.reset();
                             ui.close_menu();
@@ -207,40 +215,38 @@ impl eframe::App for App {
                 });
                 ui.separator();
                 ui.add_space(SPACE);
-                if ui
-                    .add(
-                        Button::new(egui::RichText::new("  Image 1").strong().size(16.0))
-                            .min_size(Vec2::new(150.0, 25.0)),
-                    )
-                    .on_hover_ui(|ui| {
-                        ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
-                        ui.colored_label(egui::Color32::ORANGE, "path for image 1.");
-                    })
-                    .clicked()
-                {
-                    if let Some(path) = rfd::FileDialog::new()
-                        .add_filter("image", &["png", "jpg", "jpeg"])
-                        .pick_file()
+                ui.horizontal(|ui| {
+                    if ui
+                        .add(
+                            Button::new(egui::RichText::new("  Image 1").strong().size(16.0))
+                                .min_size(Vec2::new(150.0, 25.0)),
+                        )
+                        .on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
+                            ui.colored_label(egui::Color32::ORANGE, "path for image 1.");
+                        })
+                        .clicked()
                     {
-                        self.img_path_1 = Some(path.display().to_string());
-                        self.img_1 = image::open(&path).unwrap().to_rgba8();
-                        let thumb1 = image::imageops::resize(
-                            &self.img_1,
-                            200,
-                            150,
-                            image::imageops::FilterType::Lanczos3,
-                        );
-                        self.thumbnail_1 = Some(ui.ctx().load_texture(
-                            "thumb1",
-                            to_color_image(&thumb1, 200, 150),
-                            Default::default(),
-                        ));
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("image", &["png", "jpg", "jpeg"])
+                            .pick_file()
+                        {
+                            self.img_path_1 = Some(path.display().to_string());
+                            self.img_1 = image::open(&path).unwrap().to_rgba8();
+                            let thumb1 = image::imageops::resize(
+                                &self.img_1,
+                                200,
+                                150,
+                                image::imageops::FilterType::Lanczos3,
+                            );
+                            self.thumbnail_1 = Some(ui.ctx().load_texture(
+                                "thumb1",
+                                to_color_image(&thumb1, 200, 150),
+                                Default::default(),
+                            ));
+                        }
                     }
-                }
-                ui.add_space(SPACE);
-                if let Some(picked_path) = &self.img_path_1 {
-                    ui.label(picked_path);
-                }
+                });
                 ui.add_space(SPACE);
                 Grid::new("image 1 grid")
                     .spacing((20.0, 10.0))
@@ -295,41 +301,38 @@ impl eframe::App for App {
                 ui.separator();
                 ui.add_space(SPACE);
 
-                if ui
-                    .add(
-                        Button::new(egui::RichText::new("  Image 2").strong().size(16.0))
-                            .min_size(Vec2::new(150.0, 25.0)),
-                    )
-                    .on_hover_ui(|ui| {
-                        ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
-                        ui.colored_label(egui::Color32::ORANGE, "path for image 2.");
-                    })
-                    .clicked()
-                {
-                    if let Some(path) = rfd::FileDialog::new()
-                        .add_filter("image", &["png", "jpg", "jpeg"])
-                        .pick_file()
+                ui.horizontal(|ui| {
+                    if ui
+                        .add(
+                            Button::new(egui::RichText::new("  Image 2").strong().size(16.0))
+                                .min_size(Vec2::new(150.0, 25.0)),
+                        )
+                        .on_hover_ui(|ui| {
+                            ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
+                            ui.colored_label(egui::Color32::ORANGE, "path for image 2.");
+                        })
+                        .clicked()
                     {
-                        self.img_path_2 = Some(path.display().to_string());
-                        self.img_2 = image::open(&path).unwrap().to_rgba8();
-                        let thumb2 = image::imageops::resize(
-                            &self.img_2,
-                            200,
-                            150,
-                            image::imageops::FilterType::Lanczos3,
-                        );
-                        self.thumbnail_2 = Some(ui.ctx().load_texture(
-                            "thumb2",
-                            to_color_image(&thumb2, 200, 150),
-                            Default::default(),
-                        ));
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("image", &["png", "jpg", "jpeg"])
+                            .pick_file()
+                        {
+                            self.img_path_2 = Some(path.display().to_string());
+                            self.img_2 = image::open(&path).unwrap().to_rgba8();
+                            let thumb2 = image::imageops::resize(
+                                &self.img_2,
+                                200,
+                                150,
+                                image::imageops::FilterType::Lanczos3,
+                            );
+                            self.thumbnail_2 = Some(ui.ctx().load_texture(
+                                "thumb2",
+                                to_color_image(&thumb2, 200, 150),
+                                Default::default(),
+                            ));
+                        }
                     }
-                }
-
-                ui.add_space(SPACE);
-                if let Some(picked_path) = &self.img_path_2 {
-                    ui.label(picked_path);
-                }
+                });
                 ui.add_space(SPACE);
 
                 Grid::new("image 2 grid")
@@ -945,39 +948,120 @@ impl eframe::App for App {
                     });
                 }
 
-                // Display thumbnails - manually centered
+                // Display thumbnails - centered under the main image
                 ui.add_space(s);
 
-                // Calculate total width needed
-                let thumbnail_width = 240.0;
-                let total_width = thumbnail_width * 2.0 + SPACE;
-                let available_width = ui.available_width();
-
-                if available_width > total_width {
-                    ui.horizontal(|ui| {
-                        // Add space to center
-                        ui.add_space((available_width - total_width) / 2.0);
-
-                        if let Some(txt) = &self.thumbnail_1 {
-                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                        }
-                        ui.add_space(s);
-                        if let Some(txt) = &self.thumbnail_2 {
-                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                        }
-                    });
+                // Calculate the main image width to center thumbnails under it
+                let main_image_width = if let Some(txt) = &self.texture {
+                    let img_size = txt.size_vec2();
+                    dims(img_size[0], img_size[1]).0
                 } else {
-                    // If not enough space, just show normally
-                    ui.horizontal(|ui| {
-                        if let Some(txt) = &self.thumbnail_1 {
-                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                        }
-                        ui.add_space(s);
-                        if let Some(txt) = &self.thumbnail_2 {
-                            ui.add_sized(egui::vec2(240.0, 180.0), egui::Image::new(txt));
-                        }
-                    });
-                }
+                    dims(self.width as f32, self.height as f32).0
+                };
+
+                // Calculate thumbnail layout dimensions
+                let thumbnail_width = 240.0;
+                let thumbnail_height = 180.0;
+                let spacing_between = s;
+                let total_thumbnail_width = thumbnail_width * 2.0 + spacing_between;
+
+                // Calculate centering offset
+                let centering_offset = if main_image_width > total_thumbnail_width {
+                    SPACE + (main_image_width - total_thumbnail_width) / 2.0
+                } else {
+                    SPACE // If thumbnails are wider than image, just use standard spacing
+                };
+
+                ui.horizontal(|ui| {
+                    ui.add_space(centering_offset);
+
+                    // First thumbnail with centered label
+                    ui.allocate_ui(
+                        egui::vec2(thumbnail_width, thumbnail_height + SPACE + 20.0),
+                        |ui| {
+                            ui.vertical(|ui| {
+                                if let Some(txt) = &self.thumbnail_1 {
+                                    ui.add_sized(
+                                        egui::vec2(thumbnail_width, thumbnail_height),
+                                        egui::Image::new(txt),
+                                    );
+                                } else {
+                                    // Placeholder for missing thumbnail
+                                    let rect = ui.allocate_rect(
+                                        egui::Rect::from_min_size(
+                                            ui.cursor().min,
+                                            egui::vec2(thumbnail_width, thumbnail_height),
+                                        ),
+                                        egui::Sense::hover(),
+                                    );
+                                    ui.painter().rect_filled(
+                                        rect.rect,
+                                        4.0,
+                                        egui::Color32::from_gray(50),
+                                    );
+                                }
+
+                                // Add vertical space between thumbnail and label
+                                ui.add_space(SPACE);
+
+                                // Center the filename label under the thumbnail
+                                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                    if let Some(picked_path) = &self.img_path_1 {
+                                        let path = PathBuf::from(picked_path);
+                                        if let Some(file_name) = path.file_name() {
+                                            ui.label(file_name.to_string_lossy());
+                                        }
+                                    }
+                                });
+                            });
+                        },
+                    );
+
+                    // Space between thumbnails
+                    ui.add_space(spacing_between);
+
+                    // Second thumbnail with centered label
+                    ui.allocate_ui(
+                        egui::vec2(thumbnail_width, thumbnail_height + SPACE + 20.0),
+                        |ui| {
+                            ui.vertical(|ui| {
+                                if let Some(txt) = &self.thumbnail_2 {
+                                    ui.add_sized(
+                                        egui::vec2(thumbnail_width, thumbnail_height),
+                                        egui::Image::new(txt),
+                                    );
+                                } else {
+                                    // Placeholder for missing thumbnail
+                                    let rect = ui.allocate_rect(
+                                        egui::Rect::from_min_size(
+                                            ui.cursor().min,
+                                            egui::vec2(thumbnail_width, thumbnail_height),
+                                        ),
+                                        egui::Sense::hover(),
+                                    );
+                                    ui.painter().rect_filled(
+                                        rect.rect,
+                                        4.0,
+                                        egui::Color32::from_gray(50),
+                                    );
+                                }
+
+                                // Add vertical space between thumbnail and label
+                                ui.add_space(SPACE);
+
+                                // Center the filename label under the thumbnail
+                                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                                    if let Some(picked_path) = &self.img_path_2 {
+                                        let path = PathBuf::from(picked_path);
+                                        if let Some(file_name) = path.file_name() {
+                                            ui.label(file_name.to_string_lossy());
+                                        }
+                                    }
+                                });
+                            });
+                        },
+                    );
+                });
             });
         });
     }
