@@ -37,6 +37,7 @@ pub enum Combine {
     Mix,
     Warp,
     Unsort,
+    Sort,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -74,6 +75,15 @@ pub enum SortKey {
     Lightness,
     Hue,
     Saturation,
+    MaxRgb,
+    MinRgb,
+    Rg,
+    Gb,
+    Br,
+    WrappedHue,
+    HueSat,
+    LumaSat,
+    Chroma,
 }
 
 // Used to store the location of each pixel in the sort image.

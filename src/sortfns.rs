@@ -1,4 +1,5 @@
 use image::*;
+use std::cmp::{max, min};
 
 pub(crate) type SortFn = fn(Rgba<u8>) -> i16;
 
@@ -18,9 +19,49 @@ pub(crate) fn sat(c: Rgba<u8>) -> i16 {
     sat as i16
 }
 
-fn hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
-    use std::cmp::{max, min};
+pub(crate) fn max_rgb(c: Rgba<u8>) -> i16 {
+    let max = max(max(c[0], c[1]), c[2]);
+    max as i16
+}
 
+pub(crate) fn min_rgb(c: Rgba<u8>) -> i16 {
+    let min = min(min(c[0], c[1]), c[2]);
+    min as i16
+}
+
+pub(crate) fn r_g(c: Rgba<u8>) -> i16 {
+    (c[0] - c[1]) as i16
+}
+
+pub(crate) fn g_b(c: Rgba<u8>) -> i16 {
+    (c[1] - c[2]) as i16
+}
+
+pub(crate) fn b_r(c: Rgba<u8>) -> i16 {
+    (c[2] - c[0]) as i16
+}
+
+pub(crate) fn wrapped_hue(c: Rgba<u8>) -> i16 {
+    let hsl = hsl(c[0], c[1], c[2]);
+    let h = f32::min(hsl.0, 360.0 - hsl.0);
+    (h / 360.0 * 255.0) as i16
+}
+
+pub(crate) fn hue_sat(c: Rgba<u8>) -> i16 {
+    hue(c) * sat(c)
+}
+
+pub(crate) fn luma_sat(c: Rgba<u8>) -> i16 {
+    luma(c) * sat(c)
+}
+
+pub(crate) fn chroma(c: Rgba<u8>) -> i16 {
+    let mx = max(max(c[0], c[1]), c[2]);
+    let mn = min(min(c[0], c[1]), c[2]);
+    (mx - mn) as i16
+}
+
+fn hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
     let mut h: f32;
     let max = max(max(r, g), b);
     let min = min(min(r, g), b);

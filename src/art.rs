@@ -90,6 +90,15 @@ pub(crate) fn draw(app: &App, status_tx: Sender<String>) -> RgbaImage {
                 SortKey::Lightness => luma,
                 SortKey::Hue => hue,
                 SortKey::Saturation => sat,
+                SortKey::MaxRgb => max_rgb,
+                SortKey::MinRgb => min_rgb,
+                SortKey::Rg => r_g,
+                SortKey::Gb => g_b,
+                SortKey::Br => b_r,
+                SortKey::WrappedHue => wrapped_hue,
+                SortKey::HueSat => hue_sat,
+                SortKey::LumaSat => luma_sat,
+                SortKey::Chroma => chroma,
             };
             let px_map = match app.sort_by {
                 SortBy::Row => pixel_map_row(&img_1, sort_fn, app.row_sort_order, None),
@@ -105,6 +114,38 @@ pub(crate) fn draw(app: &App, status_tx: Sender<String>) -> RgbaImage {
             };
             status_tx.send("Unsorting Image 2".to_string()).unwrap();
             img = pixel_unsort(&img_2, &px_map);
+        }
+        Combine::Sort => {
+            status_tx.send("Sorting Image".to_string()).unwrap();
+            let img_1 = DynamicImage::ImageRgba8(blurred_img_1);
+            let sort_fn = match app.sort_key {
+                SortKey::Lightness => luma,
+                SortKey::Hue => hue,
+                SortKey::Saturation => sat,
+                SortKey::MaxRgb => max_rgb,
+                SortKey::MinRgb => min_rgb,
+                SortKey::Rg => r_g,
+                SortKey::Gb => g_b,
+                SortKey::Br => b_r,
+                SortKey::WrappedHue => wrapped_hue,
+                SortKey::HueSat => hue_sat,
+                SortKey::LumaSat => luma_sat,
+                SortKey::Chroma => chroma,
+            };
+            let px_sort = match app.sort_by {
+                SortBy::Row => pixel_sort_row(&img_1, sort_fn, app.row_sort_order),
+                SortBy::Column => pixel_sort_column(&img_1, sort_fn, app.col_sort_order),
+                SortBy::RowCol => {
+                    let pm = pixel_sort_row(&img_1, sort_fn, app.row_sort_order);
+                    pixel_sort_column(&DynamicImage::ImageRgba8(pm), sort_fn, app.col_sort_order)
+                }
+                SortBy::ColRow => {
+                    let pm = pixel_sort_column(&img_1, sort_fn, app.col_sort_order);
+                    pixel_sort_row(&DynamicImage::ImageRgba8(pm), sort_fn, app.row_sort_order)
+                }
+            };
+            status_tx.send("Sorting Image 1".to_string()).unwrap();
+            img = px_sort;
         }
         rest @ (Combine::Blend | Combine::Divide | Combine::Mix) => {
             let opts = NoiseOpts::default()

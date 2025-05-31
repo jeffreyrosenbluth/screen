@@ -199,6 +199,10 @@ impl eframe::App for App {
                             self.combine = Combine::Unsort;
                             ui.close_menu();
                         }
+                        if ui.button("Sort").clicked() {
+                            self.combine = Combine::Sort;
+                            ui.close_menu();
+                        }
                     });
                 }
             });
@@ -450,7 +454,7 @@ impl eframe::App for App {
                     .spacing((20.0, 10.0))
                     .min_col_width(100.0)
                     .show(ui, |ui| {
-                        if self.combine == Combine::Unsort {
+                        if self.combine == Combine::Unsort || self.combine == Combine::Sort {
                             ui.label("Sort By");
                             ComboBox::from_id_salt("sort by")
                                 .width(150.0)
@@ -492,6 +496,39 @@ impl eframe::App for App {
                                         &mut self.sort_key,
                                         SortKey::Saturation,
                                         "Saturation",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::MaxRgb,
+                                        "Max RGB",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::MinRgb,
+                                        "Min RGB",
+                                    );
+                                    ui.selectable_value(&mut self.sort_key, SortKey::Rg, "R-G");
+                                    ui.selectable_value(&mut self.sort_key, SortKey::Gb, "G-B");
+                                    ui.selectable_value(&mut self.sort_key, SortKey::Br, "B-R");
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::WrappedHue,
+                                        "Wrapped Hue",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::HueSat,
+                                        "Hue Sat",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::LumaSat,
+                                        "Luma Sat",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.sort_key,
+                                        SortKey::Chroma,
+                                        "Chroma",
                                     );
                                 });
                             ui.end_row();
