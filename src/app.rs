@@ -431,6 +431,9 @@ impl eframe::App for App {
                             if ui.small_button("↺").clicked() {
                                 self.width = App::default().width;
                             }
+                            if self.width < 180 {
+                                self.width *= 300
+                            }
                         });
                         ui.end_row();
 
@@ -446,6 +449,9 @@ impl eframe::App for App {
                             );
                             if ui.small_button("↺").clicked() {
                                 self.height = App::default().height;
+                            }
+                            if self.height < 180 {
+                                self.height *= 300
                             }
                         });
                         ui.end_row();
@@ -540,12 +546,12 @@ impl eframe::App for App {
                                     ui.selectable_value(
                                         &mut self.sort_key,
                                         SortKey::HueSat,
-                                        "Hue Sat",
+                                        "Hue*Sat",
                                     );
                                     ui.selectable_value(
                                         &mut self.sort_key,
                                         SortKey::LumaSat,
-                                        "Luma Sat",
+                                        "Luma*Sat",
                                     );
                                     ui.selectable_value(
                                         &mut self.sort_key,
