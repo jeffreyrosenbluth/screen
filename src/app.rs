@@ -219,10 +219,15 @@ impl eframe::App for App {
                 });
                 ui.separator();
                 ui.add_space(SPACE);
+                let button_label = if self.combine == Combine::Sort {
+                    "  Image"
+                } else {
+                    "  Image 1"
+                };
                 ui.horizontal(|ui| {
                     if ui
                         .add(
-                            Button::new(egui::RichText::new("  Image 1").strong().size(16.0))
+                            Button::new(egui::RichText::new(button_label).strong().size(16.0))
                                 .min_size(Vec2::new(150.0, 25.0)),
                         )
                         .on_hover_ui(|ui| {
@@ -305,92 +310,109 @@ impl eframe::App for App {
                 ui.separator();
                 ui.add_space(SPACE);
 
-                ui.horizontal(|ui| {
-                    if ui
-                        .add(
-                            Button::new(egui::RichText::new("  Image 2").strong().size(16.0))
-                                .min_size(Vec2::new(150.0, 25.0)),
-                        )
-                        .on_hover_ui(|ui| {
-                            ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
-                            ui.colored_label(egui::Color32::ORANGE, "path for image 2.");
-                        })
-                        .clicked()
-                    {
-                        if let Some(path) = rfd::FileDialog::new()
-                            .add_filter("image", &["png", "jpg", "jpeg"])
-                            .pick_file()
+                if self.combine != Combine::Sort {
+                    ui.horizontal(|ui| {
+                        if ui
+                            .add(
+                                Button::new(egui::RichText::new("  Image 2").strong().size(16.0))
+                                    .min_size(Vec2::new(150.0, 25.0)),
+                            )
+                            .on_hover_ui(|ui| {
+                                ui.colored_label(egui::Color32::ORANGE, "Click to select the file");
+                                ui.colored_label(egui::Color32::ORANGE, "path for image 2.");
+                            })
+                            .clicked()
                         {
-                            self.img_path_2 = Some(path.display().to_string());
-                            self.img_2 = image::open(&path).unwrap().to_rgba8();
-                            let thumb2 = image::imageops::resize(
-                                &self.img_2,
-                                200,
-                                150,
-                                image::imageops::FilterType::Lanczos3,
-                            );
-                            self.thumbnail_2 = Some(ui.ctx().load_texture(
-                                "thumb2",
-                                to_color_image(&thumb2, 200, 150),
-                                Default::default(),
-                            ));
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("image", &["png", "jpg", "jpeg"])
+                                .pick_file()
+                            {
+                                self.img_path_2 = Some(path.display().to_string());
+                                self.img_2 = image::open(&path).unwrap().to_rgba8();
+                                let thumb2 = image::imageops::resize(
+                                    &self.img_2,
+                                    200,
+                                    150,
+                                    image::imageops::FilterType::Lanczos3,
+                                );
+                                self.thumbnail_2 = Some(ui.ctx().load_texture(
+                                    "thumb2",
+                                    to_color_image(&thumb2, 200, 150),
+                                    Default::default(),
+                                ));
+                            }
                         }
-                    }
-                });
-                ui.add_space(SPACE);
-
-                Grid::new("image 2 grid")
-                    .spacing((20.0, 10.0))
-                    .min_col_width(100.0)
-                    .show(ui, |ui| {
-                        ui.label("Blur").on_hover_ui(|ui| {
-                            ui.colored_label(
-                                egui::Color32::ORANGE,
-                                "Set the standard deviation of",
-                            );
-                            ui.colored_label(egui::Color32::ORANGE, "the Guassian Blur kernel,");
-                            ui.colored_label(egui::Color32::ORANGE, "to apply to image 2.");
-                        });
-                        ui.add(
-                            egui::Slider::new(&mut self.img_blur_2, 0.0..=500.0)
-                                .step_by(if shift_held { 10.0 } else { 1.0 })
-                                .clamping(SliderClamping::Never)
-                                .trailing_fill(true),
-                        );
-                        if ui.small_button("↺").clicked() {
-                            self.img_blur_2 = App::default().img_blur_2;
-                        }
-                        ui.end_row();
-
-                        ui.label("Hue Roatation").on_hover_ui(|ui| {
-                            ui.colored_label(egui::Color32::ORANGE, "Rotate the hue of all colors");
-                            ui.colored_label(egui::Color32::ORANGE, "in image 2 by the specified");
-                            ui.colored_label(egui::Color32::ORANGE, "number of degrees.");
-                        });
-                        ui.add(
-                            egui::Slider::new(&mut self.hue_rotation_2, 0..=360)
-                                .step_by(if shift_held { 15.0 } else { 5.0 })
-                                .clamping(SliderClamping::Never)
-                                .trailing_fill(true),
-                        );
-                        ui.end_row();
-
-                        ui.label("Opacity").on_hover_ui(|ui| {
-                            ui.colored_label(egui::Color32::ORANGE, "Set the opacity of image 2.");
-                            ui.colored_label(egui::Color32::ORANGE, "opacity is from 0 to 255.");
-                        });
-                        ui.add(
-                            egui::Slider::new(&mut self.opacity_2, 0..=255)
-                                .step_by(if shift_held { 10.0 } else { 5.0 })
-                                .clamping(SliderClamping::Never)
-                                .trailing_fill(true),
-                        );
-                        ui.end_row();
                     });
+                    ui.add_space(SPACE);
 
-                ui.add_space(SPACE);
-                ui.separator();
-                ui.add_space(SPACE);
+                    Grid::new("image 2 grid")
+                        .spacing((20.0, 10.0))
+                        .min_col_width(100.0)
+                        .show(ui, |ui| {
+                            ui.label("Blur").on_hover_ui(|ui| {
+                                ui.colored_label(
+                                    egui::Color32::ORANGE,
+                                    "Set the standard deviation of",
+                                );
+                                ui.colored_label(
+                                    egui::Color32::ORANGE,
+                                    "the Guassian Blur kernel,",
+                                );
+                                ui.colored_label(egui::Color32::ORANGE, "to apply to image 2.");
+                            });
+                            ui.add(
+                                egui::Slider::new(&mut self.img_blur_2, 0.0..=500.0)
+                                    .step_by(if shift_held { 10.0 } else { 1.0 })
+                                    .clamping(SliderClamping::Never)
+                                    .trailing_fill(true),
+                            );
+                            if ui.small_button("↺").clicked() {
+                                self.img_blur_2 = App::default().img_blur_2;
+                            }
+                            ui.end_row();
+
+                            ui.label("Hue Roatation").on_hover_ui(|ui| {
+                                ui.colored_label(
+                                    egui::Color32::ORANGE,
+                                    "Rotate the hue of all colors",
+                                );
+                                ui.colored_label(
+                                    egui::Color32::ORANGE,
+                                    "in image 2 by the specified",
+                                );
+                                ui.colored_label(egui::Color32::ORANGE, "number of degrees.");
+                            });
+                            ui.add(
+                                egui::Slider::new(&mut self.hue_rotation_2, 0..=360)
+                                    .step_by(if shift_held { 15.0 } else { 5.0 })
+                                    .clamping(SliderClamping::Never)
+                                    .trailing_fill(true),
+                            );
+                            ui.end_row();
+
+                            ui.label("Opacity").on_hover_ui(|ui| {
+                                ui.colored_label(
+                                    egui::Color32::ORANGE,
+                                    "Set the opacity of image 2.",
+                                );
+                                ui.colored_label(
+                                    egui::Color32::ORANGE,
+                                    "opacity is from 0 to 255.",
+                                );
+                            });
+                            ui.add(
+                                egui::Slider::new(&mut self.opacity_2, 0..=255)
+                                    .step_by(if shift_held { 10.0 } else { 5.0 })
+                                    .clamping(SliderClamping::Never)
+                                    .trailing_fill(true),
+                            );
+                            ui.end_row();
+                        });
+
+                    ui.add_space(SPACE);
+                    ui.separator();
+                    ui.add_space(SPACE);
+                }
 
                 Grid::new("size grid")
                     .spacing((20.0, 10.0))
@@ -1063,49 +1085,54 @@ impl eframe::App for App {
                     ui.add_space(spacing_between);
 
                     // Second thumbnail with centered label
-                    ui.allocate_ui(
-                        egui::vec2(thumbnail_width, thumbnail_height + SPACE + 20.0),
-                        |ui| {
-                            ui.vertical(|ui| {
-                                if let Some(txt) = &self.thumbnail_2 {
-                                    ui.add_sized(
-                                        egui::vec2(thumbnail_width, thumbnail_height),
-                                        egui::Image::new(txt),
-                                    );
-                                } else {
-                                    // Placeholder for missing thumbnail
-                                    let rect = ui.allocate_rect(
-                                        egui::Rect::from_min_size(
-                                            ui.cursor().min,
+                    if self.combine != Combine::Sort {
+                        ui.allocate_ui(
+                            egui::vec2(thumbnail_width, thumbnail_height + SPACE + 20.0),
+                            |ui| {
+                                ui.vertical(|ui| {
+                                    if let Some(txt) = &self.thumbnail_2 {
+                                        ui.add_sized(
                                             egui::vec2(thumbnail_width, thumbnail_height),
-                                        ),
-                                        egui::Sense::hover(),
-                                    );
-                                    ui.painter().rect_filled(
-                                        rect.rect,
-                                        4.0,
-                                        egui::Color32::from_gray(50),
-                                    );
-                                }
-
-                                // Add vertical space between thumbnail and label
-                                ui.add_space(SPACE);
-
-                                // Center the filename label under the thumbnail
-                                ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                                    if let Some(picked_path) = &self.img_path_2 {
-                                        let path = PathBuf::from(picked_path);
-                                        if let Some(file_name) = path.file_name() {
-                                            ui.colored_label(
-                                                egui::Color32::WHITE,
-                                                file_name.to_string_lossy(),
-                                            );
-                                        }
+                                            egui::Image::new(txt),
+                                        );
+                                    } else {
+                                        // Placeholder for missing thumbnail
+                                        let rect = ui.allocate_rect(
+                                            egui::Rect::from_min_size(
+                                                ui.cursor().min,
+                                                egui::vec2(thumbnail_width, thumbnail_height),
+                                            ),
+                                            egui::Sense::hover(),
+                                        );
+                                        ui.painter().rect_filled(
+                                            rect.rect,
+                                            4.0,
+                                            egui::Color32::from_gray(50),
+                                        );
                                     }
+
+                                    // Add vertical space between thumbnail and label
+                                    ui.add_space(SPACE);
+
+                                    // Center the filename label under the thumbnail
+                                    ui.with_layout(
+                                        egui::Layout::top_down(egui::Align::Center),
+                                        |ui| {
+                                            if let Some(picked_path) = &self.img_path_2 {
+                                                let path = PathBuf::from(picked_path);
+                                                if let Some(file_name) = path.file_name() {
+                                                    ui.colored_label(
+                                                        egui::Color32::WHITE,
+                                                        file_name.to_string_lossy(),
+                                                    );
+                                                }
+                                            }
+                                        },
+                                    );
                                 });
-                            });
-                        },
-                    );
+                            },
+                        );
+                    }
                 });
             });
         });
